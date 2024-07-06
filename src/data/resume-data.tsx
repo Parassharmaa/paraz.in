@@ -24,7 +24,7 @@ export const RESUME_DATA = {
   initials: "PS",
   location: "India",
   locationLink: null,
-  about: "Harnessing Tech to Meet Needs and Transform Lives",
+  about: "Read, Write, Execute",
   summary:
     "Experienced in full-stack development, AI/ML and data science. I have led the product teams, developed apps and AI solutions for early detection of Autism and personalized therapy for children with special needs",
   avatarUrl:
