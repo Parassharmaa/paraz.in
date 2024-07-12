@@ -83,6 +83,17 @@ export const RESUME_DATA = {
         "Fellow of the Japan-India Transformative Technology Network - 2023. The JITTN connects and empowers outstanding change-makers in India and Japan.",
     },
     {
+      company: "Digital Impact Square, TCS Foundation",
+      link: null,
+      badges: ["Nashik"],
+      title: "Innovator",
+      logo: ClevertechLogo,
+      start: "2019",
+      end: "2020",
+      description:
+        "Joined a team working on neurodevelopmental disorder in children. My work involved building a data collection/analysis pipeline and research & development of the screening tool.",
+    },
+    {
       company: "Freelance",
       link: null,
       badges: ["Remote"],
