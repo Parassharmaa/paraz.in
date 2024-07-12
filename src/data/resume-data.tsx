@@ -104,6 +104,17 @@ export const RESUME_DATA = {
       description:
         "Helped people, organizations with emerging technologies: Machine Learning, Data Science.",
     },
+    {
+      company: "Indian Institute of Science (IISc)",
+      link: null,
+      badges: ["Bangalore"],
+      title: "CSA Undergraduate Summer School",
+      logo: ClevertechLogo,
+      start: "2017",
+      end: "2017",
+      description:
+        "Attended summer school on the latest research and advancement happening in the field of computer science at Computer Science and Automation Dept, IISc.",
+    },
   ],
   skills: [
     "Python",
