@@ -1,22 +1,4 @@
-import {
-  AmbitLogo,
-  BarepapersLogo,
-  BimLogo,
-  CDGOLogo,
-  ClevertechLogo,
-  ConsultlyLogo,
-  EvercastLogo,
-  Howdy,
-  JarockiMeLogo,
-  JojoMobileLogo,
-  Minimal,
-  MobileVikingsLogo,
-  MonitoLogo,
-  NSNLogo,
-  ParabolLogo,
-  TastyCloudLogo,
-  YearProgressLogo,
-} from "@/images/logos";
+import { ClevertechLogo } from "@/images/logos";
 import { GitHubIcon, LinkedInIcon, XIcon } from "@/components/icons";
 
 export const RESUME_DATA = {
@@ -27,8 +9,7 @@ export const RESUME_DATA = {
   about: "Read, Write, Execute",
   summary:
     "Experienced in full-stack development, AI/ML and data science. I have led the product teams, developed apps and AI solutions for early detection of Autism and personalized therapy for children with special needs",
-  avatarUrl:
-    "https://media.licdn.com/dms/image/D4D03AQHg524Ox_r7fg/profile-displayphoto-shrink_400_400/0/1668424441307?e=1725494400&v=beta&t=_j4evs-Y_WDLSiIrAH83tu9D3XAnXB8w6QtZrU1MSUA",
+  avatarUrl: "paraz.png",
   personalWebsiteUrl: "https://paraz.in",
   contact: {
     email: "mail2paras.s@gmail.com",
