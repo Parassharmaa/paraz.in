@@ -42,6 +42,17 @@ export const RESUME_DATA = {
   ],
   work: [
     {
+      company: "Autify",
+      link: "https://autify.com",
+      badges: [],
+      title: "Senior Software Engineer",
+      logo: null,
+      start: "2024",
+      end: null,
+      description:
+        "Full-stack AI engineer, specializing in building next generation of AI-driven Quality Assurance tools for software testing.", 
+    },
+    {
       company: "Kidaura",
       link: "https://kidaura.in",
       badges: [],
