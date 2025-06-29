@@ -44,7 +44,7 @@ export const RESUME_DATA = {
     {
       company: "Autify",
       link: "https://autify.com",
-      badges: [],
+      badges: ["Tokyo"],
       title: "Senior Software Engineer",
       logo: null,
       start: "2024",
