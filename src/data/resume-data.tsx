@@ -4,7 +4,7 @@ import { GitHubIcon, LinkedInIcon, XIcon } from "@/components/icons";
 export const RESUME_DATA = {
   name: "Paras Sharma",
   initials: "PS",
-  location: "India",
+  location: "Tokyo, Japan",
   locationLink: null,
   about: "Read, Write, Execute",
   summary:
