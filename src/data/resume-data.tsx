@@ -113,28 +113,27 @@ export const RESUME_DATA = {
       techStack: ["VLM", "CNC", "Android", "Mobile Use Agent"],
       description:
         "AI-powered device control system combining Android automation with physical CNC tool head integration for Mobile Use Agent.",
-      link: { href: "" },
+      link: { href: "https://github.com/Parassharmaa/project-turtle" },
     },
     {
       title: "CoWrite",
       techStack: ["Rust", "Tauri", "Local LLMs", "macOS"],
       description:
         "Desktop-based AI writing assistant leveraging local LLMs and modern Rust-based tooling. Focused on performance, offline usability, and macOS global key integration.",
-      link: { href: "" },
+      link: { href: "https://github.com/Parassharmaa/cowrite" },
     },
     {
       title: "Video Assessment for Behavioral Conditions",
       techStack: ["Gemini", "Multimodal AI", "Iceberg Model"],
       description:
         "AI-driven system to analyze video data for behavioral traits using the Iceberg Model and Google Gemini multimodal models.",
-      link: { href: "" },
     },
     {
       title: "Phil AI: AI Cursor",
       techStack: ["Chrome Extension", "LLMs", "Web Automation"],
       description:
         "Chrome extension that integrates with LLMs to understand web page content and perform tasks autonomously — form filling, navigation, and interaction.",
-      link: { href: "" },
+      link: { href: "https://github.com/Parassharmaa/phil-ai" },
     },
   ],
 } as const;
