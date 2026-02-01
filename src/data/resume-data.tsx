@@ -1,5 +1,4 @@
 import { GitHubIcon, LinkedInIcon, XIcon } from "@/components/icons";
-import { ClevertechLogo } from "@/images/logos";
 
 export const RESUME_DATA = {
   name: "Paras Sharma",
@@ -8,12 +7,12 @@ export const RESUME_DATA = {
   locationLink: null,
   about: "Read, Write, Execute",
   summary:
-    "Experienced in full-stack development, AI/ML and data science. I have led the product teams, developed apps and AI solutions for early detection of Autism and personalized therapy for children with special needs",
+    "Software engineer with 6+ years of experience across full-stack development, AI/ML, and data science. Experienced in leading technical architecture and delivering AI-driven products end-to-end. At Autify, works on AI-powered Quality Assurance platforms, including LLM-based test generation, AI-native workflow design, and cross-platform desktop applications. Previously developed impactful AI solutions such as early autism detection and personalized therapy systems.",
   avatarUrl: "paraz.png",
   personalWebsiteUrl: "https://paraz.in",
   contact: {
     email: "mail2paras.s@gmail.com",
-    tel: "+91-7009105996",
+    tel: "+81-90-5040-8148",
     social: [
       {
         name: "GitHub",
@@ -35,7 +34,8 @@ export const RESUME_DATA = {
   education: [
     {
       school: "Guru Nanak Dev University",
-      degree: "Bachelor's Degree in Computer Science and Engineering",
+      degree:
+        "Bachelor's Degree in Computer Science and Engineering (GPA: 8.9/10)",
       start: "2015",
       end: "2019",
     },
@@ -50,18 +50,18 @@ export const RESUME_DATA = {
       start: "2024",
       end: null,
       description:
-        "Full-stack AI engineer, specializing in building next generation of AI-driven Quality Assurance tools for software testing.",
+        "Working on AI-driven Quality Assurance tools. Developed multi-environment desktop app using Electron, TypeScript and React. Built integrations with Atlassian, Jira, and Figma. Implemented Computer/Mobile Use agents using Vision Language Models. Technical lead for Genesis, building product architecture and AI-native workflows.",
     },
     {
       company: "Kidaura",
       link: "https://kidaura.in",
       badges: [],
-      title: "Co-Founder - Tech",
+      title: "Director & Co-Founder (Technology)",
       logo: null,
       start: "2019",
-      end: null,
+      end: "2024",
       description:
-        "Building early identification and intervention platforms for therapists, clinics and parents of children with special needs.",
+        "Managed product team for a special needs intervention platform. Implemented NextJS project with Apollo GraphQL, Express, and MongoDB. Created data analytics pipeline using Python, RabbitMQ, and PyTorch for game-based Autism screening (86% sensitivity). Developed GenAI-based curriculum creation and recommendation system.",
     },
     {
       company: "Salzburg Global Seminar",
@@ -72,58 +72,69 @@ export const RESUME_DATA = {
       start: "2023",
       end: null,
       description:
-        "Fellow of the Japan-India Transformative Technology Network - 2023. The JITTN connects and empowers outstanding change-makers in India and Japan.",
-    },
-    {
-      company: "Digital Impact Square, TCS Foundation",
-      link: null,
-      badges: ["Nashik"],
-      title: "Innovator",
-      logo: ClevertechLogo,
-      start: "2019",
-      end: "2020",
-      description:
-        "Joined a team working on neurodevelopmental disorder in children. My work involved building a data collection/analysis pipeline and research & development of the screening tool.",
+        "Fellow of the Japan-India Transformative Technology Network - 2023. Connects and empowers outstanding change-makers in India and Japan.",
     },
     {
       company: "Freelance",
       link: null,
       badges: ["Remote"],
-      title: "Python, Data Science, ML",
-      logo: ClevertechLogo,
+      title: "Data, ML, Python",
+      logo: null,
       start: "2017",
-      end: "2019",
+      end: "2020",
       description:
-        "Helped people, organizations with emerging technologies: Machine Learning, Data Science.",
-    },
-    {
-      company: "Indian Institute of Science (IISc)",
-      link: null,
-      badges: ["Bangalore"],
-      title: "CSA Undergraduate Summer School",
-      logo: ClevertechLogo,
-      start: "2017",
-      end: "2017",
-      description:
-        "Attended summer school on the latest research and advancement happening in the field of computer science at Computer Science and Automation Dept, IISc.",
+        "Implemented API servers in Django Rest Framework with ReactJS. Worked on Python, AI/ML related projects. Assisted in quick prototyping and feature validation.",
     },
   ],
   skills: [
     "Python",
+    "TypeScript",
     "JavaScript",
     "ReactJS",
     "NextJS",
+    "Rust",
+    "GoLang",
     "Django",
-    "TypeScript",
     "Flutter",
     "AWS",
     "MongoDB",
     "PostgreSQL",
     "Docker",
     "Kubernetes",
-    "Project Management",
     "Machine Learning",
+    "AI Agents",
+    "LLMs",
     "Data Science",
+    "Project Management",
   ],
-  projects: null,
+  projects: [
+    {
+      title: "Turtle",
+      techStack: ["VLM", "CNC", "Android", "Mobile Use Agent"],
+      description:
+        "AI-powered device control system combining Android automation with physical CNC tool head integration for Mobile Use Agent.",
+      link: { href: "" },
+    },
+    {
+      title: "CoWrite",
+      techStack: ["Rust", "Tauri", "Local LLMs", "macOS"],
+      description:
+        "Desktop-based AI writing assistant leveraging local LLMs and modern Rust-based tooling. Focused on performance, offline usability, and macOS global key integration.",
+      link: { href: "" },
+    },
+    {
+      title: "Video Assessment for Behavioral Conditions",
+      techStack: ["Gemini", "Multimodal AI", "Iceberg Model"],
+      description:
+        "AI-driven system to analyze video data for behavioral traits using the Iceberg Model and Google Gemini multimodal models.",
+      link: { href: "" },
+    },
+    {
+      title: "Phil AI: AI Cursor",
+      techStack: ["Chrome Extension", "LLMs", "Web Automation"],
+      description:
+        "Chrome extension that integrates with LLMs to understand web page content and perform tasks autonomously — form filling, navigation, and interaction.",
+      link: { href: "" },
+    },
+  ],
 } as const;
