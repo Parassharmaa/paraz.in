@@ -1,5 +1,7 @@
+import { posts } from "#site/content";
 import { GlobeIcon, MailIcon, PhoneIcon } from "lucide-react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { CommandMenu } from "@/components/command-menu";
 import { ProjectCard } from "@/components/project-card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -98,6 +100,39 @@ export default function Page() {
             {RESUME_DATA.summary}
           </p>
         </Section>
+        {posts.filter((p) => p.published).length > 0 && (
+          <Section className="print:hidden">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold">Posts</h2>
+              <Link href="/posts" className="text-sm text-muted-foreground hover:underline">
+                View all &rarr;
+              </Link>
+            </div>
+            {posts
+              .filter((p) => p.published)
+              .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+              .slice(0, 3)
+              .map((post) => (
+                <Link key={post.slug} href={`/posts/${post.slug}`} className="block">
+                  <Card className="transition-colors hover:bg-muted/50">
+                    <CardHeader>
+                      <div className="flex items-center justify-between gap-x-2 text-base">
+                        <h3 className="font-semibold leading-none">{post.title}</h3>
+                        <div className="text-sm tabular-nums text-gray-500">
+                          {new Date(post.date).toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                          })}
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>{post.description}</CardContent>
+                  </Card>
+                </Link>
+              ))}
+          </Section>
+        )}
         <Section>
           <h2 className="text-xl font-bold">Work Experience</h2>
           {RESUME_DATA.work.map((work) => {
@@ -203,6 +238,10 @@ export default function Page() {
             url: socialMediaLink.url,
             title: socialMediaLink.name,
           })),
+          {
+            url: "/posts",
+            title: "Posts",
+          },
         ]}
       />
     </main>
