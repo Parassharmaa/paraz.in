@@ -1,7 +1,7 @@
 "use client";
 
+import { CommandIcon } from "lucide-react";
 import * as React from "react";
-
 import {
   CommandDialog,
   CommandEmpty,
@@ -12,7 +12,6 @@ import {
   CommandSeparator,
 } from "@/components/ui/command";
 import { Button } from "./ui/button";
-import { CommandIcon } from "lucide-react";
 
 interface Props {
   links: { url: string; title: string }[];

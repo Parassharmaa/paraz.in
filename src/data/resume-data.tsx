@@ -1,5 +1,5 @@
-import { ClevertechLogo } from "@/images/logos";
 import { GitHubIcon, LinkedInIcon, XIcon } from "@/components/icons";
+import { ClevertechLogo } from "@/images/logos";
 
 export const RESUME_DATA = {
   name: "Paras Sharma",
@@ -50,7 +50,7 @@ export const RESUME_DATA = {
       start: "2024",
       end: null,
       description:
-        "Full-stack AI engineer, specializing in building next generation of AI-driven Quality Assurance tools for software testing.", 
+        "Full-stack AI engineer, specializing in building next generation of AI-driven Quality Assurance tools for software testing.",
     },
     {
       company: "Kidaura",
