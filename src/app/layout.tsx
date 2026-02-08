@@ -1,6 +1,6 @@
 import { Analytics } from "@vercel/analytics/react";
 import type { Metadata } from "next";
-import { Newsreader, Syne } from "next/font/google";
+import { Hanken_Grotesk, Newsreader } from "next/font/google";
 import { GeistMono } from "geist/font/mono";
 
 import { BackgroundMesh } from "@/components/background-mesh";
@@ -13,10 +13,10 @@ export const metadata: Metadata = {
 	description: "",
 };
 
-const syne = Syne({
+const hankenGrotesk = Hanken_Grotesk({
 	subsets: ["latin"],
 	display: "swap",
-	variable: "--font-syne",
+	variable: "--font-hanken-grotesk",
 });
 
 const newsreader = Newsreader({
@@ -35,7 +35,7 @@ export default function RootLayout({
 		<html
 			lang="en"
 			suppressHydrationWarning
-			className={`${syne.variable} ${GeistMono.variable} ${newsreader.variable}`}
+			className={`${hankenGrotesk.variable} ${GeistMono.variable} ${newsreader.variable}`}
 		>
 			<head>
 				<script
