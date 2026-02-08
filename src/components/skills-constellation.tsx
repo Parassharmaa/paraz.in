@@ -116,7 +116,7 @@ export function SkillsConstellation() {
   const svgRef = useRef<SVGSVGElement>(null);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const [dimensions, setDimensions] = useState({ width: 600, height: 400 });
-  const [isMobile, setIsMobile] = useState(false);
+  const [isMobile, setIsMobile] = useState(true);
   const { theme } = useTheme();
 
   const colors = theme === "light" ? CATEGORY_COLORS_LIGHT : CATEGORY_COLORS_DARK;

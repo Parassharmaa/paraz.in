@@ -8,6 +8,7 @@ import { RESUME_DATA } from "@/data/resume-data";
 import { HeroSection } from "@/components/hero-section";
 import { SkillsConstellation } from "@/components/skills-constellation";
 import { ScrollReveal } from "@/components/motion/scroll-reveal";
+import { SectionNav } from "@/components/section-nav";
 import { WorkTimeline } from "@/components/work-timeline";
 
 export const metadata: Metadata = {
@@ -25,6 +26,7 @@ export default function Page() {
 
 	return (
 		<main className="relative">
+			<SectionNav />
 			{/* Hero — full viewport */}
 			<div className="mx-auto max-w-3xl px-6 md:px-8">
 				<HeroSection />
@@ -36,7 +38,7 @@ export default function Page() {
 					{/* Posts */}
 					{publishedPosts.length > 0 && (
 						<ScrollReveal>
-							<section className="space-y-6 print:hidden">
+							<section id="writing" className="scroll-mt-24 space-y-6 print:hidden">
 								<div className="flex items-baseline justify-between">
 									<h2 className="text-2xl md:text-3xl italic">
 										Writing
@@ -93,7 +95,7 @@ export default function Page() {
 
 					{/* Work Experience - Timeline */}
 					<ScrollReveal>
-						<section className="space-y-6">
+						<section id="experience" className="scroll-mt-24 space-y-6">
 							<h2 className="text-2xl md:text-3xl italic">
 								Experience
 							</h2>
@@ -103,7 +105,7 @@ export default function Page() {
 
 					{/* Education */}
 					<ScrollReveal>
-						<section className="space-y-6">
+						<section id="education" className="scroll-mt-24 space-y-6">
 							<h2 className="text-2xl md:text-3xl italic">
 								Education
 							</h2>
@@ -130,7 +132,7 @@ export default function Page() {
 
 					{/* Skills */}
 					<ScrollReveal>
-						<section className="space-y-6">
+						<section id="skills" className="scroll-mt-24 space-y-6">
 							<h2 className="text-2xl md:text-3xl italic">
 								Skills
 							</h2>
@@ -153,7 +155,7 @@ export default function Page() {
 					{/* Projects */}
 					{RESUME_DATA.projects && (
 						<ScrollReveal>
-							<section className="space-y-6 print-force-new-page">
+							<section id="projects" className="scroll-mt-24 space-y-6 print-force-new-page">
 								<h2 className="text-2xl md:text-3xl italic">
 									Projects
 								</h2>
