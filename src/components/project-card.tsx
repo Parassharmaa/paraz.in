@@ -1,6 +1,7 @@
 "use client";
 
-import { motion } from "motion/react";
+import { useRef, useCallback } from "react";
+import { motion, useMotionValue, useSpring } from "motion/react";
 import { ArrowUpRightIcon } from "lucide-react";
 import { Badge } from "./ui/badge";
 
@@ -12,15 +13,48 @@ interface Props {
 }
 
 export function ProjectCard({ title, description, tags, link }: Props) {
+	const ref = useRef<HTMLDivElement>(null);
 	const Wrapper = link ? "a" : "div";
 	const wrapperProps = link
 		? { href: link, target: "_blank", rel: "noopener noreferrer" }
 		: {};
 
+	const rotateX = useMotionValue(0);
+	const rotateY = useMotionValue(0);
+	const springRotateX = useSpring(rotateX, { stiffness: 300, damping: 30 });
+	const springRotateY = useSpring(rotateY, { stiffness: 300, damping: 30 });
+
+	const handleMouseMove = useCallback(
+		(e: React.MouseEvent) => {
+			const el = ref.current;
+			if (!el) return;
+			const rect = el.getBoundingClientRect();
+			const centerX = rect.left + rect.width / 2;
+			const centerY = rect.top + rect.height / 2;
+			const dx = e.clientX - centerX;
+			const dy = e.clientY - centerY;
+			rotateX.set(-(dy / (rect.height / 2)) * 5);
+			rotateY.set((dx / (rect.width / 2)) * 5);
+		},
+		[rotateX, rotateY],
+	);
+
+	const handleMouseLeave = useCallback(() => {
+		rotateX.set(0);
+		rotateY.set(0);
+	}, [rotateX, rotateY]);
+
 	return (
 		<motion.div
-			whileHover={{ y: -4 }}
-			transition={{ type: "spring", stiffness: 400, damping: 25 }}
+			ref={ref}
+			onMouseMove={handleMouseMove}
+			onMouseLeave={handleMouseLeave}
+			style={{
+				perspective: 800,
+				rotateX: springRotateX,
+				rotateY: springRotateY,
+				transformStyle: "preserve-3d",
+			}}
 		>
 			<Wrapper
 				{...wrapperProps}

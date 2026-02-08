@@ -4,6 +4,8 @@ import { Newsreader } from "next/font/google";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 
+import { BackgroundMesh } from "@/components/background-mesh";
+import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 import type React from "react";
 
@@ -37,7 +39,12 @@ export default function RootLayout({
 					}}
 				/>
 			</head>
-			<body>{children}</body>
+			<body>
+				<ThemeProvider>
+					<BackgroundMesh />
+					{children}
+				</ThemeProvider>
+			</body>
 			<Analytics />
 		</html>
 	);

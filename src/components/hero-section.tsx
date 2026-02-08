@@ -1,23 +1,37 @@
 "use client";
 
-import { motion } from "motion/react";
+import { useState, useCallback } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import { ArrowDownIcon, MailIcon } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { RESUME_DATA } from "@/data/resume-data";
 import { AnimatedText } from "@/components/motion/animated-text";
 import { AnimatedSection } from "@/components/motion/animated-section";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { TerminalBoot, RotatingTaglines } from "@/components/terminal-boot";
 
 export function HeroSection() {
+	const [bootComplete, setBootComplete] = useState(false);
+	const handleBootComplete = useCallback(() => setBootComplete(true), []);
+
 	return (
 		<div className="relative flex min-h-[85vh] flex-col justify-center py-20 print:min-h-0 print:py-4">
-			{/* Theme toggle - top right */}
 			<div className="absolute top-4 right-0 flex items-center gap-3 print:hidden">
 				<ThemeToggle />
 			</div>
 
 			<div className="space-y-8">
-				{/* Avatar + Status */}
+				<AnimatePresence mode="wait">
+				{!bootComplete ? (
+					<TerminalBoot onComplete={handleBootComplete} />
+				) : (
+					<motion.div
+						key="hero-content"
+						className="space-y-8"
+						initial={{ opacity: 0 }}
+						animate={{ opacity: 1 }}
+						transition={{ duration: 0.6 }}
+					>
 				<AnimatedSection delay={0}>
 					<div className="flex items-center gap-4">
 						<motion.div
@@ -45,28 +59,22 @@ export function HeroSection() {
 					</div>
 				</AnimatedSection>
 
-				{/* Name - massive, character-by-character */}
 				<AnimatedText
 					text={RESUME_DATA.name}
 					className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-light tracking-tight leading-[0.9]"
 					gradient
 				/>
 
-				{/* Tagline */}
 				<AnimatedSection delay={0.6}>
-					<p className="font-mono text-sm md:text-base tracking-[0.3em] uppercase text-muted-foreground">
-						{RESUME_DATA.about}
-					</p>
+					<RotatingTaglines />
 				</AnimatedSection>
 
-				{/* Summary */}
 				<AnimatedSection delay={0.8}>
 					<p className="max-w-lg text-base text-muted-foreground leading-relaxed">
 						{RESUME_DATA.summary.split(".").slice(0, 2).join(".")}.
 					</p>
 				</AnimatedSection>
 
-				{/* Action row */}
 				<AnimatedSection delay={1.0}>
 					<div className="flex flex-wrap items-center gap-3 print:hidden">
 						{RESUME_DATA.contact.email && (
@@ -97,7 +105,6 @@ export function HeroSection() {
 					</div>
 				</AnimatedSection>
 
-				{/* Print-only contact info */}
 				<div className="hidden flex-col gap-1 text-sm text-muted-foreground print:flex print:text-[12px]">
 					{RESUME_DATA.contact.email && (
 						<a href={`mailto:${RESUME_DATA.contact.email}`}>
@@ -114,9 +121,11 @@ export function HeroSection() {
 						</a>
 					)}
 				</div>
+					</motion.div>
+				)}
+				</AnimatePresence>
 			</div>
 
-			{/* Scroll indicator */}
 			<motion.div
 				className="absolute bottom-8 left-1/2 -translate-x-1/2 print:hidden"
 				initial={{ opacity: 0 }}

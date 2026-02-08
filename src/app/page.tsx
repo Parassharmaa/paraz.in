@@ -6,6 +6,7 @@ import { ProjectCard } from "@/components/project-card";
 import { Badge } from "@/components/ui/badge";
 import { RESUME_DATA } from "@/data/resume-data";
 import { HeroSection } from "@/components/hero-section";
+import { SkillsConstellation } from "@/components/skills-constellation";
 import { ScrollReveal } from "@/components/motion/scroll-reveal";
 import { WorkTimeline } from "@/components/work-timeline";
 
@@ -133,13 +134,16 @@ export default function Page() {
 							<h2 className="text-2xl md:text-3xl italic">
 								Skills
 							</h2>
-							<div className="flex flex-wrap gap-2">
+							<div className="print:hidden">
+								<SkillsConstellation />
+							</div>
+							<div className="hidden print:flex print:flex-wrap print:gap-2">
 								{RESUME_DATA.skills.map((skill) => (
 									<Badge
-										key={skill}
+										key={skill.name}
 										className="print:text-[10px]"
 									>
-										{skill}
+										{skill.name}
 									</Badge>
 								))}
 							</div>

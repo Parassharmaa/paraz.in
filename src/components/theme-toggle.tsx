@@ -2,21 +2,11 @@
 
 import { motion, AnimatePresence } from "motion/react";
 import { MoonIcon, SunIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useTheme } from "@/components/theme-provider";
 
 export function ThemeToggle() {
-	const [isLight, setIsLight] = useState(false);
-
-	useEffect(() => {
-		setIsLight(document.documentElement.classList.contains("light"));
-	}, []);
-
-	function toggle() {
-		const next = !isLight;
-		setIsLight(next);
-		document.documentElement.classList.toggle("light", next);
-		localStorage.setItem("theme", next ? "light" : "dark");
-	}
+	const { theme, toggle } = useTheme();
+	const isLight = theme === "light";
 
 	return (
 		<button

@@ -1,7 +1,9 @@
 "use client";
 
 import { motion } from "motion/react";
-import { CommandIcon, MoonIcon, PrinterIcon, SunIcon } from "lucide-react";
+import { PrinterIcon, SunIcon } from "lucide-react";
+import { AgentMascot } from "@/components/mascot/agent-mascot";
+import { useTheme } from "@/components/theme-provider";
 import * as React from "react";
 import {
 	CommandDialog,
@@ -19,6 +21,7 @@ interface Props {
 
 export const CommandMenu = ({ links }: Props) => {
 	const [open, setOpen] = React.useState(false);
+	const { toggle } = useTheme();
 
 	React.useEffect(() => {
 		const down = (e: KeyboardEvent) => {
@@ -34,7 +37,6 @@ export const CommandMenu = ({ links }: Props) => {
 
 	return (
 		<>
-			{/* FAB — always visible */}
 			<motion.button
 				onClick={() => setOpen(true)}
 				className="fixed bottom-6 right-6 z-40 flex size-12 items-center justify-center rounded-full border border-border bg-card shadow-lg print:hidden cursor-pointer"
@@ -57,7 +59,7 @@ export const CommandMenu = ({ links }: Props) => {
 						ease: "easeInOut",
 					}}
 				>
-					<CommandIcon className="size-5" />
+					<AgentMascot size={32} />
 				</motion.div>
 			</motion.button>
 
@@ -77,14 +79,7 @@ export const CommandMenu = ({ links }: Props) => {
 						</CommandItem>
 						<CommandItem
 							onSelect={() => {
-								const isLight =
-									document.documentElement.classList.toggle(
-										"light",
-									);
-								localStorage.setItem(
-									"theme",
-									isLight ? "light" : "dark",
-								);
+								toggle();
 								setOpen(false);
 							}}
 						>
