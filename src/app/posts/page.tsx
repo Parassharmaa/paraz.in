@@ -44,25 +44,32 @@ export default function PostsPage() {
 					</div>
 				</AnimatedSection>
 
-				<div className="space-y-1">
+				<div className="space-y-4">
 					{publishedPosts.map((post, i) => (
 						<ScrollReveal key={post.slug} delay={i * 0.05}>
 							<Link
 								href={`/posts/${post.slug}`}
 								className="group block"
 							>
-								<div className="flex items-baseline justify-between gap-4 rounded-lg px-4 py-4 -mx-4 transition-colors hover:bg-accent/50">
-									<div className="space-y-1">
-										<h3 className="font-sans text-base font-medium group-hover:text-foreground transition-colors">
-											{post.title}
-										</h3>
-										<p className="text-sm text-muted-foreground line-clamp-1">
-											{post.description}
-										</p>
+								<div className="rounded-xl border border-border/50 px-5 py-4 transition-all duration-300 hover:border-border hover:bg-accent/50 glow-hover">
+									<div className="flex items-start justify-between gap-4">
+										<div className="space-y-1.5 min-w-0">
+											<h3 className="font-sans text-base font-medium truncate group-hover:text-foreground transition-colors">
+												{post.title}
+											</h3>
+											<p className="text-sm text-muted-foreground line-clamp-1">
+												{post.description}
+											</p>
+										</div>
+										<div className="flex flex-col items-end gap-2 shrink-0">
+											<span className="text-xs font-mono text-muted-foreground">
+												{formatDate(post.date)}
+											</span>
+											<span className="text-muted-foreground opacity-0 translate-x-0 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-1">
+												&rarr;
+											</span>
+										</div>
 									</div>
-									<span className="text-xs font-mono text-muted-foreground shrink-0">
-										{formatDate(post.date)}
-									</span>
 								</div>
 							</Link>
 						</ScrollReveal>
