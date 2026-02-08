@@ -15,10 +15,6 @@ const BOOT_LINES: BootLine[] = [
   { prompt: "> ", text: "loading modules... ████████ done", delay: 400 },
   { prompt: "$ ", text: "whoami", delay: 900 },
   { prompt: "  ", text: "Paras Sharma", delay: 1200, isOutput: true },
-  { prompt: "$ ", text: "location", delay: 1600 },
-  { prompt: "  ", text: "Tokyo, Japan", delay: 1900, isOutput: true },
-  { prompt: "$ ", text: "motto", delay: 2200 },
-  { prompt: "  ", text: "READ, WRITE, EXECUTE", delay: 2500, isOutput: true },
 ];
 
 interface TerminalBootProps {

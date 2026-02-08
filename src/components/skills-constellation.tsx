@@ -2,14 +2,22 @@
 
 import { useRef, useState, useEffect, useMemo } from "react";
 import { RESUME_DATA } from "@/data/resume-data";
+import { useTheme } from "@/components/theme-provider";
 
 type SkillCategory = "language" | "framework" | "tools" | "ai";
 
-const CATEGORY_COLORS: Record<SkillCategory, string> = {
+const CATEGORY_COLORS_DARK: Record<SkillCategory, string> = {
   language: "hsl(180 95% 55%)",
   framework: "hsl(220 90% 65%)",
   tools: "hsl(320 90% 60%)",
   ai: "hsl(158 70% 52%)",
+};
+
+const CATEGORY_COLORS_LIGHT: Record<SkillCategory, string> = {
+  language: "hsl(180 90% 32%)",
+  framework: "hsl(220 85% 45%)",
+  tools: "hsl(320 80% 42%)",
+  ai: "hsl(158 65% 35%)",
 };
 
 const CATEGORY_LABELS: Record<SkillCategory, string> = {
@@ -109,6 +117,9 @@ export function SkillsConstellation() {
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const [dimensions, setDimensions] = useState({ width: 600, height: 400 });
   const [isMobile, setIsMobile] = useState(false);
+  const { theme } = useTheme();
+
+  const colors = theme === "light" ? CATEGORY_COLORS_LIGHT : CATEGORY_COLORS_DARK;
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -187,7 +198,7 @@ export function SkillsConstellation() {
   if (isMobile) {
     return (
       <div className="space-y-4">
-        {(Object.keys(CATEGORY_COLORS) as SkillCategory[]).map((cat) => (
+        {(Object.keys(CATEGORY_COLORS_DARK) as SkillCategory[]).map((cat) => (
           <div key={cat}>
             <p className="text-xs font-mono text-muted-foreground mb-2">{CATEGORY_LABELS[cat]}</p>
             <div className="flex flex-wrap gap-2">
@@ -198,9 +209,9 @@ export function SkillsConstellation() {
                     key={skill.name}
                     className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors"
                     style={{
-                      borderColor: CATEGORY_COLORS[cat],
-                      color: CATEGORY_COLORS[cat],
-                      backgroundColor: `color-mix(in srgb, ${CATEGORY_COLORS[cat]} 10%, transparent)`,
+                      borderColor: colors[cat],
+                      color: colors[cat],
+                      backgroundColor: `color-mix(in srgb, ${colors[cat]} 10%, transparent)`,
                     }}
                   >
                     {skill.name}
@@ -216,11 +227,11 @@ export function SkillsConstellation() {
   return (
     <div ref={containerRef} className="relative w-full" style={{ height: dimensions.height }}>
       <div className="absolute top-2 right-2 flex flex-wrap gap-3 z-10">
-        {(Object.keys(CATEGORY_COLORS) as SkillCategory[]).map((cat) => (
+        {(Object.keys(CATEGORY_COLORS_DARK) as SkillCategory[]).map((cat) => (
           <div key={cat} className="flex items-center gap-1.5">
             <div
               className="size-2 rounded-full"
-              style={{ backgroundColor: CATEGORY_COLORS[cat] }}
+              style={{ backgroundColor: colors[cat] }}
             />
             <span className="text-[10px] font-mono text-muted-foreground">
               {CATEGORY_LABELS[cat]}
@@ -243,7 +254,7 @@ export function SkillsConstellation() {
               y1={nodeA.y}
               x2={nodeB.x}
               y2={nodeB.y}
-              stroke="hsl(180 95% 55%)"
+              stroke={colors.language}
               strokeWidth={isHighlighted ? 1.5 : 0.8}
               opacity={isDimmed ? 0.05 : isHighlighted ? 0.5 : 0.15}
               style={{ transition: "opacity 0.3s, stroke-width 0.3s" }}
@@ -266,7 +277,7 @@ export function SkillsConstellation() {
                 cx={node.x}
                 cy={node.y}
                 r={hoveredNode === node.name ? 20 : 14}
-                fill={CATEGORY_COLORS[node.category]}
+                fill={colors[node.category]}
                 opacity={hoveredNode === node.name ? 0.15 : 0.05}
                 style={{ transition: "r 0.3s, opacity 0.3s" }}
               />
@@ -274,7 +285,7 @@ export function SkillsConstellation() {
                 cx={node.x}
                 cy={node.y}
                 r={hoveredNode === node.name ? 5 : 4}
-                fill={CATEGORY_COLORS[node.category]}
+                fill={colors[node.category]}
                 style={{ transition: "r 0.3s" }}
               />
               <text

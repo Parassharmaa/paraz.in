@@ -1,8 +1,9 @@
 "use client";
 
 import { motion } from "motion/react";
-import { MoonIcon, PrinterIcon, SunIcon } from "lucide-react";
+import { PrinterIcon, SunIcon } from "lucide-react";
 import { AgentMascot } from "@/components/mascot/agent-mascot";
+import { useTheme } from "@/components/theme-provider";
 import * as React from "react";
 import {
 	CommandDialog,
@@ -20,6 +21,7 @@ interface Props {
 
 export const CommandMenu = ({ links }: Props) => {
 	const [open, setOpen] = React.useState(false);
+	const { toggle } = useTheme();
 
 	React.useEffect(() => {
 		const down = (e: KeyboardEvent) => {
@@ -77,14 +79,7 @@ export const CommandMenu = ({ links }: Props) => {
 						</CommandItem>
 						<CommandItem
 							onSelect={() => {
-								const isLight =
-									document.documentElement.classList.toggle(
-										"light",
-									);
-								localStorage.setItem(
-									"theme",
-									isLight ? "light" : "dark",
-								);
+								toggle();
 								setOpen(false);
 							}}
 						>
