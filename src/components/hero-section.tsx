@@ -61,7 +61,7 @@ export function HeroSection() {
 
 				<AnimatedText
 					text={RESUME_DATA.name}
-					className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-light tracking-tight leading-[0.9] text-foreground"
+					className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-light tracking-wide leading-[0.9] text-foreground"
 				/>
 
 				<AnimatedSection delay={0.6}>
