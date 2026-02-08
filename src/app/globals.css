@@ -3,39 +3,40 @@
 @plugin "@tailwindcss/typography";
 
 :root {
-  --background: hsl(0 0% 4%);
-  --foreground: hsl(0 0% 93%);
+  --background: hsl(230 30% 4%);
+  --foreground: hsl(210 20% 95%);
 
-  --card: hsl(0 0% 7%);
-  --card-foreground: hsl(0 0% 93%);
+  --card: hsl(230 20% 7%);
+  --card-foreground: hsl(210 20% 95%);
 
-  --popover: hsl(0 0% 7%);
-  --popover-foreground: hsl(0 0% 93%);
+  --popover: hsl(230 20% 7%);
+  --popover-foreground: hsl(210 20% 95%);
 
-  --primary: hsl(0 0% 93%);
-  --primary-foreground: hsl(0 0% 4%);
+  --primary: hsl(210 20% 95%);
+  --primary-foreground: hsl(230 30% 4%);
 
-  --secondary: hsl(0 0% 10%);
-  --secondary-foreground: hsl(0 0% 93%);
+  --secondary: hsl(230 15% 10%);
+  --secondary-foreground: hsl(210 20% 95%);
 
-  --muted: hsl(0 0% 10%);
-  --muted-foreground: hsl(0 0% 55%);
+  --muted: hsl(230 15% 10%);
+  --muted-foreground: hsl(210 10% 55%);
 
-  --accent: hsl(0 0% 12%);
-  --accent-foreground: hsl(0 0% 93%);
+  --accent: hsl(230 12% 12%);
+  --accent-foreground: hsl(210 20% 95%);
 
   --destructive: hsl(0 84% 60%);
-  --destructive-foreground: hsl(0 0% 93%);
+  --destructive-foreground: hsl(210 20% 95%);
 
-  --border: hsl(0 0% 14%);
-  --input: hsl(0 0% 14%);
+  --border: hsl(230 10% 14%);
+  --input: hsl(230 10% 14%);
   --ring: hsl(0 0% 40%);
 
   --radius: 0.75rem;
 
-  --gradient-1: hsl(280 80% 65%);
-  --gradient-2: hsl(200 90% 60%);
-  --gradient-3: hsl(340 80% 60%);
+  --gradient-1: hsl(180 95% 55%);
+  --gradient-2: hsl(220 90% 65%);
+  --gradient-3: hsl(320 90% 60%);
+  --tokyo-green: hsl(158 70% 52%);
 }
 
 .light {
@@ -67,9 +68,10 @@
   --input: hsl(0 0% 88%);
   --ring: hsl(0 0% 60%);
 
-  --gradient-1: hsl(280 80% 55%);
-  --gradient-2: hsl(200 90% 50%);
-  --gradient-3: hsl(340 80% 50%);
+  --gradient-1: hsl(180 80% 45%);
+  --gradient-2: hsl(220 75% 55%);
+  --gradient-3: hsl(320 75% 50%);
+  --tokyo-green: hsl(158 55% 42%);
 }
 
 @theme inline {
@@ -125,8 +127,7 @@ html {
     transition: background-color 0.5s ease, color 0.3s ease;
   }
 
-  /* Subtle grain texture */
-  body::before {
+    body::before {
     content: "";
     position: fixed;
     inset: 0;
@@ -153,7 +154,6 @@ html {
   }
 }
 
-/* Gradient text utility */
 .gradient-text {
   background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2), var(--gradient-3));
   background-size: 200% 200%;
@@ -168,7 +168,6 @@ html {
   50% { background-position: 100% 50%; }
 }
 
-/* Animated underline */
 .animated-link {
   position: relative;
   text-decoration: none;
@@ -187,18 +186,16 @@ html {
   width: 100%;
 }
 
-/* Glass card */
 .glass {
-  background: hsl(0 0% 100% / 0.03);
+  background: hsl(220 30% 100% / 0.03);
   backdrop-filter: blur(12px);
-  border: 1px solid hsl(0 0% 100% / 0.06);
+  border: 1px solid hsl(220 30% 100% / 0.06);
 }
 .light .glass {
   background: hsl(0 0% 100% / 0.6);
   border: 1px solid hsl(0 0% 0% / 0.06);
 }
 
-/* Glow effect for hover states */
 .glow-hover {
   position: relative;
 }
@@ -217,16 +214,14 @@ html {
   opacity: 0.15;
 }
 
-/* Dot grid pattern */
 .dot-grid {
-  background-image: radial-gradient(circle, hsl(0 0% 100% / 0.08) 1px, transparent 1px);
+  background-image: radial-gradient(circle, hsl(220 30% 100% / 0.08) 1px, transparent 1px);
   background-size: 24px 24px;
 }
 .light .dot-grid {
   background-image: radial-gradient(circle, hsl(0 0% 0% / 0.06) 1px, transparent 1px);
 }
 
-/* Prose overrides */
 .prose {
   --tw-prose-body: var(--foreground);
   --tw-prose-headings: var(--foreground);
@@ -255,7 +250,6 @@ html {
   color: var(--muted-foreground);
 }
 
-/* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 6px;
 }
