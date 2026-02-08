@@ -135,5 +135,19 @@ export const RESUME_DATA = {
         "Chrome extension that integrates with LLMs to understand web page content and perform tasks autonomously — form filling, navigation, and interaction.",
       link: { href: "https://github.com/Parassharmaa/phil-ai" },
     },
+    {
+      title: "agent-fetch",
+      techStack: ["Rust", "npm", "Security", "AI Agents", "HTTP Client"],
+      description:
+        "Sandboxed HTTP client with SSRF protection for AI agents. Prevents DNS rebinding, blocks private IPs, and validates every connection — available as a Rust crate and npm package.",
+      link: { href: "https://github.com/Parassharmaa/agent-fetch" },
+    },
+    {
+      title: "agent-sandbox",
+      techStack: ["WASM", "WASI", "Sandbox", "AI Agents"],
+      description:
+        "A sandboxed execution environment for AI agents via WASM.",
+      link: { href: "https://github.com/Parassharmaa/agent-sandbox" },
+    },
   ],
 } as const;
