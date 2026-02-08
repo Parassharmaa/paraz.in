@@ -30,12 +30,6 @@ export default function PostsPage() {
 			<div className="space-y-12">
 				<AnimatedSection>
 					<div className="space-y-4">
-						<Link
-							href="/"
-							className="animated-link text-sm text-muted-foreground inline-block"
-						>
-							&larr; Back
-						</Link>
 						<h1 className="text-4xl md:text-5xl italic">Writing</h1>
 						<p className="text-muted-foreground max-w-md">
 							Thoughts on software engineering, AI, side projects,

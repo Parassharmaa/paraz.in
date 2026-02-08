@@ -1,6 +1,5 @@
 import { posts } from "#site/content";
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { MDXContent } from "@/components/mdx-components";
 import { AnimatedSection } from "@/components/motion/animated-section";
@@ -53,12 +52,6 @@ export default async function PostPage({ params }: PostPageProps) {
 				<div className="space-y-12">
 					<AnimatedSection>
 						<div className="space-y-6">
-							<Link
-								href="/posts"
-								className="animated-link text-sm text-muted-foreground inline-block"
-							>
-								&larr; Back to posts
-							</Link>
 							<div className="space-y-3">
 								<h1 className="text-3xl md:text-4xl lg:text-5xl italic leading-tight">
 									{post.title}

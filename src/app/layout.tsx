@@ -4,8 +4,8 @@ import { Hanken_Grotesk, Newsreader } from "next/font/google";
 import { GeistMono } from "geist/font/mono";
 
 import { BackgroundMesh } from "@/components/background-mesh";
+import { NavBar } from "@/components/nav-bar";
 import { ThemeProvider } from "@/components/theme-provider";
-import { ThemeToggle } from "@/components/theme-toggle";
 import "./globals.css";
 import type React from "react";
 
@@ -48,9 +48,7 @@ export default function RootLayout({
 			<body>
 				<ThemeProvider>
 					<BackgroundMesh />
-					<div className="fixed top-4 right-6 z-40 print:hidden">
-						<ThemeToggle />
-					</div>
+					<NavBar />
 					{children}
 				</ThemeProvider>
 			</body>
