@@ -1,10 +1,12 @@
 "use client";
 
 import type { DialogProps } from "@radix-ui/react-dialog";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Command as CommandPrimitive } from "cmdk";
 import { Search } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
 import * as React from "react";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
 const Command = React.forwardRef<
@@ -27,14 +29,59 @@ interface CommandDialogProps extends DialogProps {}
 
 const CommandDialog = ({ children, ...props }: CommandDialogProps) => {
   return (
-    <Dialog {...props}>
-      <DialogContent className="overflow-hidden p-0 shadow-lg">
-        <DialogTitle className="sr-only">Command Menu</DialogTitle>
-        <Command className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-group]]:px-2 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5">
-          {children}
-        </Command>
-      </DialogContent>
-    </Dialog>
+    <DialogPrimitive.Root {...props}>
+      <AnimatePresence>
+        {props.open && (
+          <DialogPrimitive.Portal forceMount>
+            <DialogPrimitive.Overlay asChild>
+              <motion.div
+                className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm print:hidden"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+              />
+            </DialogPrimitive.Overlay>
+            <DialogPrimitive.Content asChild>
+              <motion.div
+                className="fixed left-[50%] top-[50%] z-50 w-full max-w-lg overflow-hidden rounded-xl border border-border bg-popover p-0 shadow-2xl print:hidden"
+                initial={{
+                  opacity: 0,
+                  scale: 0.95,
+                  x: "-50%",
+                  y: "-48%",
+                  filter: "blur(8px)",
+                }}
+                animate={{
+                  opacity: 1,
+                  scale: 1,
+                  x: "-50%",
+                  y: "-50%",
+                  filter: "blur(0px)",
+                }}
+                exit={{
+                  opacity: 0,
+                  scale: 0.95,
+                  x: "-50%",
+                  y: "-48%",
+                  filter: "blur(4px)",
+                }}
+                transition={{
+                  type: "spring",
+                  stiffness: 350,
+                  damping: 30,
+                }}
+              >
+                <DialogTitle className="sr-only">Command Menu</DialogTitle>
+                <Command className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-group]]:px-2 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5">
+                  {children}
+                </Command>
+              </motion.div>
+            </DialogPrimitive.Content>
+          </DialogPrimitive.Portal>
+        )}
+      </AnimatePresence>
+    </DialogPrimitive.Root>
   );
 };
 

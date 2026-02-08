@@ -35,7 +35,7 @@ export const RESUME_DATA = {
     {
       school: "Guru Nanak Dev University",
       degree:
-        "Bachelor's Degree in Computer Science and Engineering (GPA: 8.9/10)",
+        "Bachelor's Degree in Computer Science and Engineering",
       start: "2015",
       end: "2019",
     },
