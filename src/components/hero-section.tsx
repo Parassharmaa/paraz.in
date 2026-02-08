@@ -7,7 +7,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { RESUME_DATA } from "@/data/resume-data";
 import { AnimatedText } from "@/components/motion/animated-text";
 import { AnimatedSection } from "@/components/motion/animated-section";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { TerminalBoot, RotatingTaglines } from "@/components/terminal-boot";
 
 export function HeroSection() {
@@ -16,10 +15,6 @@ export function HeroSection() {
 
 	return (
 		<div className="relative flex min-h-[85vh] flex-col justify-center py-20 print:min-h-0 print:py-4">
-			<div className="absolute top-4 right-0 flex items-center gap-3 print:hidden">
-				<ThemeToggle />
-			</div>
-
 			<div className="space-y-8">
 				<AnimatePresence mode="wait">
 				{!bootComplete ? (

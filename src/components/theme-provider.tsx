@@ -22,12 +22,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>("dark");
 
   useEffect(() => {
+    let resolved: Theme = "dark";
     const stored = localStorage.getItem("theme");
     if (stored === "light" || stored === "dark") {
-      setTheme(stored);
+      resolved = stored;
     } else if (window.matchMedia("(prefers-color-scheme: light)").matches) {
-      setTheme("light");
+      resolved = "light";
     }
+    document.documentElement.classList.toggle("light", resolved === "light");
+    setTheme(resolved);
   }, []);
 
   const toggle = useCallback(() => {
