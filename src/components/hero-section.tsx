@@ -43,14 +43,6 @@ export function HeroSection() {
 								</AvatarFallback>
 							</Avatar>
 						</motion.div>
-						<div className="space-y-1">
-							<p className="text-xs font-mono text-muted-foreground">
-								Compiling ideas in
-							</p>
-							<p className="text-sm text-foreground">
-								{RESUME_DATA.location}
-							</p>
-						</div>
 					</div>
 				</AnimatedSection>
 
