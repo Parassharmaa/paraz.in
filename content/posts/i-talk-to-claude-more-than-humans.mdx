@@ -1,48 +1,108 @@
 ---
 title: "I Talk to Claude More Than Humans (And What That Taught Me)"
-description: "Three weeks using Claude as a coding agent revealed the reality behind AI hype: pattern-following, the 95% ceiling, and confident hallucinations. February 2026."
-date: 2026-02-07
+description: "Three weeks running Claude 24/7 taught me how to make coding agents actually work: verification loops, team standards, and the right tooling setup."
+date: 2026-02-09
 published: true
-tags: ["AI", "coding agents", "Claude", "LLM", "development", "machine learning"]
+tags: ["AI", "coding agents", "Claude", "LLM", "development", "automation"]
 author: "Paras Sharma"
 ---
 
 In the last three weeks, I've sent more messages to Claude than to any human being. Not the chatbot. The coding agent.
 
-With everyone hyping up AI agents replacing developers, I wanted to see what actually happens when you use one full-time. Real work, not demos.
+I've been running these models 24/7. Multiple instances. While doing dishes, going for walks, sleeping. They're constantly working: planning features, writing code, reviewing changes, opening PRs, writing tests, building CI/CD pipelines.
 
-It's February 2026. Things might change in the coming months. But this is how it feels right now.
+It's February 2026. Things might change in the coming months. But here's what I've learned about making these things actually work.
 
-## They Follow Patterns, They Don't Learn
+## They Need Strong Verification Loops
 
-Use these coding agents every day and you'll see it: they do the same thing over and over.
+Here's what nobody tells you: these models are incredibly capable when you build the right system around them.
 
-Give it context, write better prompts, share your codebase. Doesn't matter. It follows the same patterns. It's not learning your project. It's guessing what code comes next based on patterns from training.
+They're reward-hungry. They want to achieve goals. And if you give them strong feedback loops, they will. The trick is building those loops.
 
-At first that feels amazing. Then it feels like working with someone who memorized Stack Overflow but doesn't understand why anything works.
+I've found two types of verification that work:
 
-## The 95% Problem
+**Hard verification** - deterministic feedback they can't argue with:
+- Tests that pass or fail
+- Code that compiles or doesn't
+- Type checking that's binary
 
-So you compensate. Build systems. Write specs. Teach it your patterns.
+**Soft verification** - self-review against guidelines:
+- Code review checklists
+- Style guide compliance
+- Architecture pattern adherence
 
-You get to 95%. Maybe 99% on a good day. But that last 1%? That's where the actual work is. And nothing gets you past it.
+When you combine both? You get surprisingly good output. The models self-correct against soft rules, then prove it with hard tests.
 
-The edge cases. The parts needing real understanding, not pattern matching. The ceiling doesn't move.
+## Build Team Standards (This Matters More Than You Think)
 
-## They Lie (Confidently)
+If you're working in a team, this becomes critical: standardize how everyone uses these agents.
 
-Worst part: they lie about code.
+Here's what worked for me:
 
-They tell you it compiles when it doesn't. Import libraries that don't exist. Call functions wrong. Present guesses as working solutions.
+**Create guidance files in your repo:**
+- `CLAUDE.MD` or `AGENT.MD` with coding guidelines
+- Architecture decisions and patterns
+- Code review standards
+- Testing requirements
 
-And they sound so sure that you start trusting them. You stop checking. Then you're debugging code that was broken from the start.
+**Make sure every team member uses them.** Every coding agent too.
 
-You have to verify everything. Every line. That's not extra work. That's the whole job now.
+Why this matters: when humans and agents follow the same standards, code quality converges. The agent-written code starts looking like human-written code. Human code follows the same patterns. Reviews become easier. Onboarding becomes faster.
 
-## This Isn't Getting Fixed
+Without this? You get fragmented codebases where every developer (human or AI) has their own style. Good luck maintaining that.
 
-These aren't bugs. Hallucinations, patterns, the 99% limit - that's how these things work. They're predictive, not intelligent.
+## My Actual Setup
 
-They write very useful code sometimes. But they're tools, not teammates. They need constant supervision.
+Here's what I'm running:
 
-Anthropic can call it "agentic coding" all they want. What it actually is: very fast autocomplete that needs you to check its work.
+**Custom Skills** - Team-specific skills we defined and follow
+
+**MCPs:**
+- Filesystem MCP (essential)
+- GitHub MCP - agents open PRs, close issues, read CI output
+- Chrome DevTools for browser automation
+
+**GitHub CLI** - Configured `gh` so agents can handle the full PR workflow and get feedback from CI runs
+
+**Visual Verification:**
+- Playwright for video capture
+- Automated screenshot/video demos
+- After completing a feature, Claude records a video demo showing it works
+
+This last one is surprisingly powerful. Visual verification catches things tests miss. The agent finishes a feature, records how it works, and I can see immediately if it actually does what it's supposed to.
+
+## Addition vs Maintenance
+
+These models are excellent at writing new code. Give them a spec, they'll implement it. Add tests to the loop, they'll make them pass.
+
+But maintaining existing codebases? That's where things break down without proper verification.
+
+I learned this the hard way: if your codebase doesn't have tests, integration checks, and clear contracts, using coding agents will eventually break things. The code looks fine. It compiles. But subtle bugs slip through.
+
+**The solution**: Build the verification infrastructure first. Then let the agents work within it.
+
+## The Debug Problem
+
+Here's where they still struggle: debugging.
+
+They analyze the problem. Build a plan. The plan looks great. Then during implementation, they miss things. Small things. And somehow, those small things slip past me too.
+
+I haven't figured out how to break this pattern yet. The 99% ceiling is real. You can't just set these things loose and expect perfection.
+
+**You're still the supervisor.** You still need to check. But with good verification loops, you're checking against test failures and type errors, not guessing if the logic is right.
+
+## What Actually Works
+
+After three weeks of constant usage, here's the system:
+
+1. **Build custom systems** - MCPs, skill files, custom verification loops
+2. **Standardize across the team** - shared CLAUDE.MD/AGENT.MD in repos
+3. **Automate the pipeline** - planning → implementation → review → PR → tests → CI
+4. **Write tests with code** - every feature comes with its verification
+5. **Add visual verification** - screenshots, videos, browser automation
+6. **Use hard + soft verification** - combine deterministic checks with guideline reviews
+7. **Connect to your tools** - GitHub CLI, filesystem access, browser control
+
+These aren't perfect tools. They need structure, guardrails, and supervision. But when you build that structure? They can do a surprising amount of useful work.
+
+The skill isn't just prompting anymore. It's building the system that lets them succeed.
