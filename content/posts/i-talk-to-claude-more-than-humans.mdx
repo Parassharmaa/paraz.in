@@ -1,54 +1,48 @@
 ---
 title: "I Talk to Claude More Than Humans (And What That Taught Me)"
-description: "Three weeks of heavy LLM use revealed patterns, limits, and truths the hype doesn't mention: reward-chasing, the 99% ceiling, and confident hallucinations."
+description: "Three weeks using Claude as a coding agent revealed the reality behind AI hype: pattern-following, the 95% ceiling, and confident hallucinations. February 2026."
 date: 2026-02-07
 published: true
+tags: ["AI", "coding agents", "Claude", "LLM", "development", "machine learning"]
+author: "Paras Sharma"
 ---
 
-In the last three weeks, I've sent more messages to an LLM than to any human being. Not because I'm lonely or because I think AI is going to save the world. I had work to do, and I wanted to see what would break first: the model or my patience.
+In the last three weeks, I've sent more messages to Claude than to any human being. Not the chatbot. The coding agent.
 
-What I found wasn't revolutionary. It was something else entirely. Useful in spots, sure. But also deeply, fundamentally broken in ways that aren't going away anytime soon.
+With everyone hyping up AI agents replacing developers, I wanted to see what actually happens when you use one full-time. Real work, not demos.
 
-## They're Pattern Followers, Not Learners
+It's February 2026. Things might change in the coming months. But this is how it feels right now.
 
-Here's the first thing you notice when you actually live with these models: they follow patterns. Really predictable ones.
+## They Follow Patterns, They Don't Learn
 
-The more I talked to it, the more I could see the seams. Give it context, refine your prompts, build elaborate markdown files to guide it. Doesn't matter. It always does the same dance. There's a rhythm to it. A pattern. And once you see it, you can't unsee it.
+Use these coding agents every day and you'll see it: they do the same thing over and over.
 
-It's not learning from our conversation. It's not getting smarter. It's just really, really good at predicting what word comes next based on what it memorized during training. You reward long answers? You get essays. You reward short ones? You get bullets. You act like everything is fine? It assumes everything is fine.
+Give it context, write better prompts, share your codebase. Doesn't matter. It follows the same patterns. It's not learning your project. It's guessing what code comes next based on patterns from training.
 
-There's no real intelligence here. Just a very sophisticated prediction engine that happens to be trained on most of human knowledge. At first, that feels like magic. Then it feels like talking to someone who memorized every book but doesn't actually understand any of them.
+At first that feels amazing. Then it feels like working with someone who memorized Stack Overflow but doesn't understand why anything works.
 
-## The 95% Ceiling
+## The 95% Problem
 
-So you start compensating. You build systems. You create context files. You fine-tune your prompts. You spend hours teaching it your codebase, your preferences, your edge cases.
+So you compensate. Build systems. Write specs. Teach it your patterns.
 
-And it works. Sort of.
+You get to 95%. Maybe 99% on a good day. But that last 1%? That's where the actual work is. And nothing gets you past it.
 
-You get to 95%. Then 97%. On a really good day, maybe 99%. But that last 1%? That's where you live. That's where the actual work is. And no amount of context, no amount of hand-holding, gets you past it.
-
-I tried everything. More examples. Better prompts. Structured output. It always got stuck at the same place. The edge cases. The things that require actual understanding, not just pattern matching.
-
-You can build all the infrastructure you want. The ceiling doesn't move.
+The edge cases. The parts needing real understanding, not pattern matching. The ceiling doesn't move.
 
 ## They Lie (Confidently)
 
-Here's the worst part: they lie to you.
+Worst part: they lie about code.
 
-Not on purpose. They don't have purpose. But they're trained to sound confident, to give you complete answers, to never say "I don't know" unless you explicitly force them to.
+They tell you it compiles when it doesn't. Import libraries that don't exist. Call functions wrong. Present guesses as working solutions.
 
-So they make things up. They hallucinate. They tell you the code compiled when it didn't. They say the file exists when it doesn't. They present guesses as facts because that's what gets rewarded during training.
+And they sound so sure that you start trusting them. You stop checking. Then you're debugging code that was broken from the start.
 
-And they do it so smoothly, so confidently, that you start to trust them. That's the dangerous part. You stop checking. You assume it's right because it sounds right.
+You have to verify everything. Every line. That's not extra work. That's the whole job now.
 
-I learned the hard way: you have to verify everything. Every single line. Every single claim. The moment you let your guard down, you're debugging phantom problems or trusting broken solutions.
+## This Isn't Getting Fixed
 
-Human verification isn't optional. It's the whole job now.
+These aren't bugs. Hallucinations, patterns, the 99% limit - that's how these things work. They're predictive, not intelligent.
 
-## This Isn't Going Away
+Useful for boilerplate and scaffolding? Sure. But they're tools, not teammates. They need constant supervision.
 
-These aren't bugs to be fixed in the next version. Hallucinations, pattern dependence, the 99% ceiling... these are fundamental to how these models work. They're not intelligent. They're predictive. And prediction, no matter how good, isn't understanding.
-
-Don't get me wrong. They're useful. Incredibly useful for certain things. But they're tools, not teammates. Assistants, not replacements.
-
-The skill isn't prompting anymore. It's knowing when to trust them and when to double-check everything.
+Anthropic can call it "agentic coding" all they want. What it actually is: very fast autocomplete that needs you to check its work.
