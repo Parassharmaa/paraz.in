@@ -47,7 +47,7 @@ Here's what worked for me:
 
 **Make sure every team member uses them.** Every coding agent too.
 
-Why this matters: when humans and agents follow the same standards, code quality converges. The agent-written code starts looking like human-written code. Human code follows the same patterns. Reviews become easier. Onboarding becomes faster.
+Why this matters: when humans and agents follow the same standards, code quality converges. The agent-written code starts looking like human-written code. Reviews become easier. Onboarding becomes faster.
 
 Without this? You get fragmented codebases where every developer (human or AI) has their own style. Good luck maintaining that.
 
@@ -58,11 +58,18 @@ Here's what I'm running:
 **Custom Skills** - Team-specific skills we defined and follow
 
 **MCPs:**
-- Filesystem MCP (essential)
-- GitHub MCP - agents open PRs, close issues, read CI output
-- Chrome DevTools for browser automation
+- Jira MCP - task tracking, issue management
+- Chrome DevTools MCP - browser automation and testing
 
 **GitHub CLI** - Configured `gh` so agents can handle the full PR workflow and get feedback from CI runs
+
+**Video Editing Tools:**
+- ffmpeg for video editing
+- Extract audio from videos
+- Add captions automatically
+- Create video demos
+
+Claude uses these CLI tools to do a lot of video editing work automatically.
 
 **Visual Verification:**
 - Playwright for video capture
@@ -101,7 +108,7 @@ After three weeks of constant usage, here's the system:
 4. **Write tests with code** - every feature comes with its verification
 5. **Add visual verification** - screenshots, videos, browser automation
 6. **Use hard + soft verification** - combine deterministic checks with guideline reviews
-7. **Connect to your tools** - GitHub CLI, filesystem access, browser control
+7. **Connect to your tools** - GitHub CLI, Jira, browser control, video editing (ffmpeg)
 
 These aren't perfect tools. They need structure, guardrails, and supervision. But when you build that structure? They can do a surprising amount of useful work.
 
