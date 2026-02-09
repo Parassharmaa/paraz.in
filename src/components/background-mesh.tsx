@@ -3,11 +3,11 @@
 import { useRef, useEffect } from "react";
 import { useTheme } from "@/components/theme-provider";
 
-const ATTRACTOR_COUNT = 3;
-const PARTICLE_COUNT = 120;
-const TRAIL_LENGTH = 50;
-const GRAVITY = 800;
-const SPAWN_RATE = 2;
+const ATTRACTOR_COUNT = 2;
+const PARTICLE_COUNT = 40;
+const TRAIL_LENGTH = 20;
+const GRAVITY = 600;
+const SPAWN_RATE = 1;
 
 const HUES = [180, 220, 320, 158];
 
@@ -189,16 +189,16 @@ export function BackgroundMesh() {
           ctx.lineTo(p.trail[ti], p.trail[ti + 1]);
         }
 
-        const alpha = (light ? 0.18 : 0.14) * lifeFade;
+        const alpha = (light ? 0.08 : 0.08) * lifeFade;
         ctx.strokeStyle = `hsla(${p.hue}, ${sat}, ${lum}, ${alpha})`;
-        ctx.lineWidth = 1;
+        ctx.lineWidth = 0.8;
         ctx.lineCap = "round";
         ctx.stroke();
 
         const headIdx = ((p.trailHead - 1) % TRAIL_LENGTH + TRAIL_LENGTH) % TRAIL_LENGTH * 2;
         const hx = p.trail[headIdx];
         const hy = p.trail[headIdx + 1];
-        const headAlpha = (light ? 0.35 : 0.35) * lifeFade;
+        const headAlpha = (light ? 0.15 : 0.15) * lifeFade;
 
         ctx.beginPath();
         ctx.arc(hx, hy, 1.3, 0, Math.PI * 2);
