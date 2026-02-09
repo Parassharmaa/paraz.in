@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Hanken_Grotesk, Newsreader } from "next/font/google";
 import { GeistMono } from "geist/font/mono";
 
+import { GradientMesh } from "@/components/gradient-mesh";
 import { NavBar } from "@/components/nav-bar";
 import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
@@ -46,6 +47,7 @@ export default function RootLayout({
 			</head>
 			<body>
 				<ThemeProvider>
+					<GradientMesh />
 					<NavBar />
 					{children}
 				</ThemeProvider>
