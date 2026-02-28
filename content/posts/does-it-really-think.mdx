@@ -1,31 +1,21 @@
 ---
-title: "Does It Really Think? A Simple Test"
-description: "I gave an LLM a puzzle it had never seen before. What happened next challenges what we think we know about reasoning in AI."
+title: "The iOS Keyboard Cipher"
+description: "A fun puzzle using the iOS symbol keyboard as a substitution cipher."
 date: 2026-02-16
 published: true
-tags: ["AI", "LLM", "reasoning", "machine learning", "cognitive science"]
+tags: ["puzzle", "keyboard"]
 author: "Paras Sharma"
 ---
 
-I wanted to know if an LLM could actually think.
-
-Not "complete patterns from training data" think. Not "predict the next token statistically" think. Real thinking. The kind where you encounter something new and figure it out.
-
-So I gave it a puzzle it had definitely never seen before.
-
-## The Experiment
-
 On iOS, when you switch from the ABC keyboard to the 123 keyboard, each symbol sits exactly where a letter used to be. Same position, different character.
 
-So I typed a word using the symbol keyboard:
+So I typed this:
 
 ```
 0-4-/
 ```
 
-Could the LLM figure out what word I meant?
-
-It struggled at first. Asked clarifying questions. Tried different mappings. But once I explained the method - that each symbol corresponds to the letter at that position on the QWERTY keyboard - it got it:
+The mapping:
 
 ```
 0 → P (row 1, position 10)
@@ -37,80 +27,10 @@ It struggled at first. Asked clarifying questions. Tried different mappings. But
 
 **PARAS.**
 
-Then I gave it another:
+Another one:
 
 ```
 )3""9
 ```
 
-Without hesitation: **HELLO.**
-
-## Was It Thinking?
-
-Here's the thing: this specific iOS keyboard cipher is almost certainly not in the LLM's training data. It's not a common puzzle. There's no Wikipedia page on it. No Reddit threads decoding celebrity tweets written this way.
-
-And yet, it solved it.
-
-Two explanations:
-
-**1. Pattern matching** - It had seen enough keyboard layouts and substitution ciphers in training that it could statistically approximate the solution. Sophisticated, yes. But not reasoning.
-
-**2. Compositional reasoning** - It combined separate pieces of knowledge (QWERTY layout + iOS 123 layout + positional mapping) to solve a novel problem. That's generalization. That's thinking.
-
-I asked the LLM which one it was.
-
-It said: "I don't fully know."
-
-## What the Research Says
-
-Turns out, this exact question is being actively debated in AI research right now.
-
-**The evidence for real reasoning:**
-
-NYU researchers published the first mathematical proof that LLMs can genuinely generalize beyond training data ([Lotfi et al., ICML 2024](https://arxiv.org/abs/2312.17173)). They showed that models discover underlying regularities, not just memorize patterns.
-
-This directly contradicts the "stochastic parrot" hypothesis - that LLMs are just regurgitating training data.
-
-**The evidence against:**
-
-Research on compositional generalization shows LLMs handle simple pattern combinations well, but struggle with complex structural reasoning ([Zhang et al., 2024](https://arxiv.org/abs/2406.15992)).
-
-The keyboard puzzle? That's simple compositional reasoning. Ask an LLM to combine three abstract mathematical proofs it's never seen together? It breaks down.
-
-## The Real Question
-
-Maybe we're asking the wrong thing.
-
-We want to know: "Does it think like us?"
-
-But human thinking isn't one thing. It's pattern recognition. It's logical inference. It's emotional processing. It's cultural context. It's embodied experience.
-
-An LLM doesn't have a body. It doesn't feel emotions. It doesn't live in the world.
-
-But it does something we recognize as thinking when we see the output.
-
-So maybe the question isn't "Does it think?" but "What kind of thinking is this?"
-
-## What I Learned
-
-I ran this experiment expecting a clean answer. I didn't get one.
-
-The LLM solved a puzzle it had never seen. That's impressive. But I still don't know if it "reasoned" to the solution or if its training was so comprehensive that even this novel problem fell within the space of patterns it already knew.
-
-The research doesn't give a clean answer either. LLMs can generalize. They can combine knowledge. But they also fail in ways that suggest they're missing something fundamental about understanding.
-
-Here's what I do know:
-
-**It doesn't matter as much as we think.**
-
-Whether the LLM "truly reasons" or "approximates reasoning through pattern matching" - the output is the same. It solved the puzzle. It writes code. It helps me think through problems.
-
-The philosophical question is fascinating. But for practical purposes, we're past the point where it matters.
-
-These models can do useful cognitive work. They have limitations. They need verification loops. They make mistakes.
-
-Just like humans.
-
----
-
-*Try it yourself. Give an LLM the iOS keyboard cipher. See what happens. Then decide what you think "thinking" means.*
+**HELLO.**
