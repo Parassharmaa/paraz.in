@@ -107,6 +107,32 @@ export const RESUME_DATA = {
     { name: "Data Science", category: "ai" },
     { name: "Project Management", category: "tools" },
   ] as const,
+  research: [
+    {
+      title: "WhisperGate",
+      fullTitle: "WhisperGate: Silence-Aware Gating for Hallucination-Free Speech Recognition with Frozen Whisper",
+      description:
+        "A lightweight trainable gate module (~12K parameters) that sits between Whisper's frozen encoder and decoder, learning to classify each encoder frame as speech or non-speech. Eliminates 100% of hallucinations on silence and noise inputs while preserving clean-speech word error rate.",
+      year: "2026",
+      tags: ["ASR", "Whisper", "Hallucination", "Gating"],
+      links: {
+        paper: "https://github.com/Parassharmaa/whisper-gate/blob/main/paper/main.pdf",
+        code: "https://github.com/Parassharmaa/whisper-gate",
+      },
+    },
+    {
+      title: "PDNA",
+      fullTitle: "Pulse-Driven Neural Architecture: Learnable Oscillatory Dynamics for Robust Continuous-Time Sequence Processing",
+      description:
+        "Introduces structured oscillatory dynamics into continuous-time neural networks. A pulse module injects learnable sinusoidal perturbations that improve temporal gap robustness on sequential tasks, with self-attention for inter-dimensional coordination.",
+      year: "2026",
+      tags: ["Neural ODE", "Oscillations", "CfC", "Sequence Modeling"],
+      links: {
+        paper: "https://github.com/Parassharmaa/pdna/blob/main/paper/main.pdf",
+        code: "https://github.com/Parassharmaa/pdna",
+      },
+    },
+  ],
   projects: [
     {
       title: "Turtle",

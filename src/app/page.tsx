@@ -93,6 +93,74 @@ export default function Page() {
 						</ScrollReveal>
 					)}
 
+					{/* Research */}
+					{RESUME_DATA.research && RESUME_DATA.research.length > 0 && (
+						<ScrollReveal>
+							<section id="research" className="scroll-mt-24 space-y-6 print:break-before-page">
+								<h2 className="text-2xl md:text-3xl italic">
+									Research
+								</h2>
+								<div className="space-y-4">
+									{RESUME_DATA.research.map((paper) => (
+										<div
+											key={paper.title}
+											className="rounded-xl border border-border/50 px-5 py-4 space-y-3"
+										>
+											<div className="flex items-start justify-between gap-4">
+												<div className="space-y-1.5 min-w-0">
+													<h3 className="font-sans text-base font-medium">
+														{paper.title}
+													</h3>
+													<p className="text-sm text-muted-foreground leading-relaxed">
+														{paper.description}
+													</p>
+												</div>
+												<span className="text-xs font-mono text-muted-foreground shrink-0">
+													{paper.year}
+												</span>
+											</div>
+											<div className="flex items-center gap-4">
+												<div className="flex flex-wrap gap-1.5">
+													{paper.tags.map((tag) => (
+														<Badge
+															key={tag}
+															variant="secondary"
+															className="text-[10px] px-1.5 py-0"
+														>
+															{tag}
+														</Badge>
+													))}
+												</div>
+												<div className="flex items-center gap-3 ml-auto shrink-0">
+													{paper.links.paper && (
+														<a
+															href={paper.links.paper}
+															target="_blank"
+															rel="noopener noreferrer"
+															className="animated-link text-xs text-muted-foreground"
+														>
+															Paper
+														</a>
+													)}
+													{paper.links.code && (
+														<a
+															href={paper.links.code}
+															target="_blank"
+															rel="noopener noreferrer"
+															className="animated-link text-xs text-muted-foreground"
+														>
+															Code
+														</a>
+													)}
+												</div>
+											</div>
+										</div>
+									))}
+								</div>
+							</section>
+						</ScrollReveal>
+					)}
+
 					{/* Work Experience - Timeline */}
 					<ScrollReveal>
 						<section id="experience" className="scroll-mt-24 space-y-6">
