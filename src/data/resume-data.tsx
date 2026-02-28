@@ -121,7 +121,7 @@ export const RESUME_DATA = {
       },
     },
     {
-      title: "PDNA",
+      title: "Pulse-Driven Neural Architecture (PDNA)",
       fullTitle: "Pulse-Driven Neural Architecture: Learnable Oscillatory Dynamics for Robust Continuous-Time Sequence Processing",
       description:
         "Introduces structured oscillatory dynamics into continuous-time neural networks. A pulse module injects learnable sinusoidal perturbations that improve temporal gap robustness on sequential tasks, with self-attention for inter-dimensional coordination.",
