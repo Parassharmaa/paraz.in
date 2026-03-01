@@ -1,0 +1,164 @@
+---
+title: "Fine-Tuning a 2B Vision Model for PDF-to-Markdown with GRPO"
+description: "I spent a day fine-tuning Qwen3-VL-2B for PDF-to-markdown conversion using SFT + GRPO. Total cost: $4. Here's what worked, what didn't, and why GRPO alone fails on vision models."
+date: 2026-03-01
+published: true
+---
+
+I wanted to try out GRPO and LoRA on a vision-language model, just to see how far you can push the capabilities of a small VLM with minimal compute. The task I picked was PDF-to-markdown conversion: show the model an image of a PDF page and have it output well-structured markdown with headings, tables, code blocks, and correct reading order.
+
+Here's what happened across 22 commits, 3 training configurations, and about $4 on RunPod.
+
+## Building the Dataset
+
+Before training anything, I needed pairs of PDF page images and their corresponding markdown, so I built a pipeline that collects real markdown from diverse sources, renders it to styled PDFs, and then converts those PDFs into images.
+
+### Collecting Markdown
+
+The collection pipeline pulls from four different sources to get a good variety of document styles and content types:
+
+| Source | What | Count |
+|--------|------|-------|
+| GitHub repos | READMEs, docs, guides from 28 EN + 13 JA repos (React, PyTorch, Kubernetes, etc.) | ~600 files |
+| Wikipedia | Programming/CS articles in English and Japanese | 45 articles |
+| arXiv papers | LaTeX papers from 10 CS categories, converted to markdown via pandoc | 100 papers |
+| GitHub LaTeX | Textbooks, templates, theses converted via pandoc | 15 repos |
+
+Each file was filtered for quality, requiring a minimum of 200 characters and the presence of markdown markers like headings, tables, code fences, or lists, with a maximum of 50k characters per file to keep things manageable.
+
+### Rendering to PDF Images
+
+The rendering pipeline converts markdown to HTML with styled CSS, then to PDF, and finally to PNG images at 150 DPI using PyMuPDF. To make the model more robust to visual variation, I randomized the rendering parameters per file, varying font sizes between 11px, 12px, and 14px, margins between 20-25mm, and using different font families for English (Georgia, Times) and Japanese (Hiragino Kaku Gothic Pro, Noto Sans CJK).
+
+The tricky part was page-level splitting, since a single markdown document might render to 5+ PDF pages but the model needs to know which *portion* of the markdown corresponds to each page image. I split the markdown at paragraph boundaries (double newlines) and tracked character offsets for each page as `page_start_char` to `page_end_char`, so each image pairs with its specific markdown chunk rather than the entire document.
+
+The final dataset came out to **500 training pairs and 20 test pairs**, stratified by language so both English and Japanese are represented in the test set, and uploaded to HuggingFace as [blazeofchi/pdf-ocr-rl-dataset](https://huggingface.co/datasets/blazeofchi/pdf-ocr-rl-dataset).
+
+## The Model and Setup
+
+I went with [Qwen3-VL-2B-Instruct](https://huggingface.co/Qwen/Qwen3-VL-2B-Instruct) at 2.15 billion parameters, one of the smallest vision-language models available, running on a single NVIDIA A40 (48GB) on RunPod at $0.79/hour. I wrote a script that provisions the pod via the RunPod GraphQL API, installs dependencies, and sets up SSH access automatically.
+
+For fine-tuning I used QLoRA with r=32 and alpha=64, making only 2.18% of the model's parameters trainable while keeping the rest frozen.
+
+The GRPO reward function measures four aspects of conversion quality:
+
+| Component | Weight | What it measures |
+|-----------|--------|-----------------|
+| Edit distance | 0.4 | Character-level Levenshtein similarity to reference |
+| Reading order | 0.25 | Content blocks in correct sequence |
+| Heading accuracy | 0.2 | Heading detection precision and recall |
+| Structural validity | 0.15 | Well-formed markdown structure |
+
+## Iterating on the Config
+
+The training config wasn't static and evolved across commits as I hit problems and learned what works:
+
+| Change | Why |
+|--------|-----|
+| Qwen2.5-VL-3B to Qwen3-VL-2B | Smaller, faster, better Unsloth support |
+| LoRA r=16 to r=32 | More capacity for the adapter to learn the task |
+| 6 generations to 4 | Memory constraints on A40 |
+| Added `strip_thinking()` | Qwen3 wraps output in `<think>` blocks, and the reward function was scoring thinking tokens instead of actual markdown |
+| Added SFT warm-up | GRPO alone completely failed (the big one) |
+
+The reward weights also changed between experiments, and this turned out to matter more than I expected:
+
+| Component | v2 (best) | v3 (worse) |
+|-----------|-----------|------------|
+| edit_distance | 0.4 | 0.6 |
+| reading_order | 0.25 | 0.15 |
+| heading | 0.2 | 0.15 |
+| structural | 0.15 | 0.1 |
+
+The v3 config weighted edit distance more heavily at 0.6 vs 0.4, based on the assumption that character fidelity was the most important signal, but it actually produced worse results across the board. The v2 weights gave more room to structural and reading order metrics, and this led to a model that was better at the *structure* of markdown, which is what actually matters for document conversion.
+
+## Attempt 1: GRPO Alone (It Failed)
+
+The first thing I tried was pure GRPO directly on the base model without any supervised warm-up, just giving it PDF images, letting it generate markdown, scoring the outputs with the composite reward function, and hoping the gradients would do their thing.
+
+The result was that nothing changed at all. The gradient norm was **0.0000047**, essentially zero, and the model wasn't learning anything.
+
+The reason turned out to be fundamental to how GRPO works: it samples multiple outputs for the same input and compares their rewards to compute advantages, which means it needs *variance* in the outputs. But the base model, when shown a PDF image, generates outputs that are almost identical to each other, and the reward standard deviation across a group of 4 generations was only **0.017**, meaning everything scored roughly the same and there was no signal to learn from.
+
+> Text models generate diverse reasoning chains for the same problem, which is why GRPO works well there. Vision models generating markdown from a specific image converge to nearly the same output every time, leaving GRPO with nothing to differentiate.
+
+This was my first major learning: GRPO alone won't work when the model's outputs have no diversity.
+
+## Attempt 2: SFT + GRPO (It Worked)
+
+The fix was obvious in hindsight: teach the model the task first with supervised fine-tuning, and *then* optimize with RL.
+
+**Stage 1, SFT Warm-up (100 steps)** showed the model image-markdown pairs and trained it supervised using Unsloth's `SFTTrainer`, which moved the weights enough that the model started generating diverse outputs, with loss dropping from 1.295 to 0.78 and gradient norm at a healthy 1.85.
+
+**Stage 2, GRPO Refinement (100 steps)** now had something to work with because the model's outputs were varied enough to produce real reward differences, and the reward climbed from 0.66 to 0.74.
+
+The gradient difference between the two approaches was **400,000x**, which makes it clear that SFT warm-up isn't optional for GRPO on vision-language models.
+
+### Results
+
+Evaluated on 20 held-out test samples with bf16 inference on A40:
+
+| Metric | Base Model | Fine-tuned | Change |
+|--------|-----------|------------|--------|
+| Heading Precision | 0.855 | **0.930** | **+7.5%** |
+| Heading F1 | 0.840 | **0.894** | **+5.4%** |
+| Code Block Similarity | 0.578 | **0.757** | **+18.0%** |
+| Code Block Count | 0.333 | **0.515** | **+18.2%** |
+| Word Precision | 0.756 | **0.790** | **+3.5%** |
+| Word F1 | 0.715 | **0.731** | **+1.6%** |
+| Edit Distance | 0.753 | 0.735 | -1.8% |
+
+The edit distance went *down* slightly, but that's actually expected and fine because the fine-tuned model generates better-structured markdown with proper headings and code blocks, which differs character-by-character from the reference even though it's semantically superior. Word-level F1, which measures content overlap at the word level rather than exact character alignment, confirms the improvement.
+
+## Attempt 3: More SFT (Diminishing Returns)
+
+I also tried extending SFT to 200 steps (2x the original) to see if more supervised training alone would help. Edit distance improved slightly at +0.8%, but heading F1 dropped by -3.3% and code similarity dropped by -2.7%, which suggests that more SFT without GRPO doesn't improve structural understanding and just makes the model better at character-level copying.
+
+## The Full Comparison
+
+| Config | edit_dist | heading_f1 | code_sim | word_f1 |
+|--------|-----------|-----------|----------|---------|
+| Base (no training) | 0.753 | 0.840 | 0.578 | 0.715 |
+| GRPO only | 0.753 | 0.840 | 0.578 | 0.715 |
+| **SFT + GRPO** | 0.735 | **0.894** | **0.757** | **0.731** |
+| Extended SFT (200 steps) | 0.761 | 0.807 | 0.551 | 0.717 |
+
+## Evaluation Metrics
+
+One meta-learning from this project is that choosing the right evaluation metric matters as much as choosing the right training method:
+
+| Metric | What it measures | Verdict |
+|--------|-----------------|---------|
+| Levenshtein edit distance | Character-level similarity | Too strict, penalizes better formatting |
+| Word F1 | Word-level overlap (precision + recall) | Better for measuring content quality |
+| Heading F1 | Heading detection (precision + recall) | Good for structural evaluation |
+| Code block similarity | Code content accuracy | Good for code-heavy documents |
+
+Levenshtein ratio penalizes any reformatting even when the content is semantically correct, so a model that adds proper headings or code blocks will score *lower* on edit distance despite being *better*. Word-level F1 is more forgiving and better captures what actually matters for document conversion quality.
+
+## What I'd Do Differently
+
+A larger test set would be the first priority, since 20 samples is enough to see trends but not enough for statistical significance, and 100-200 would give much more confidence in the results. The dataset is also entirely synthetic (rendered markdown to PDF to image), so real scanned documents with noise, varying layouts, and actual typography would be a harder and more useful test. And I didn't benchmark against existing OCR systems like Nougat, GOT-OCR, or olmOCR, which would provide useful context for how these results compare to the state of the art.
+
+## Models and Code
+
+Everything is open:
+
+| Resource | Link |
+|----------|------|
+| Best model (SFT+GRPO) | [blazeofchi/pdf-ocr-rl-qwen3vl2b-sft-grpo](https://huggingface.co/blazeofchi/pdf-ocr-rl-qwen3vl2b-sft-grpo) |
+| SFT checkpoint | [blazeofchi/pdf-ocr-rl-qwen3vl2b-sft-only](https://huggingface.co/blazeofchi/pdf-ocr-rl-qwen3vl2b-sft-only) |
+| Dataset | [blazeofchi/pdf-ocr-rl-dataset](https://huggingface.co/datasets/blazeofchi/pdf-ocr-rl-dataset) |
+| Code | [github.com/Parassharmaa/pdf-ocr-rl](https://github.com/Parassharmaa/pdf-ocr-rl) |
+
+Total cost was **~$4 on RunPod**, and the entire thing including dataset creation, 3 training runs, and evaluation took about 12 hours of GPU time on an A40.
+
+The main takeaway is that GRPO is powerful but on vision-language models it needs SFT to bootstrap the process. Pure RL works when your model naturally generates diverse outputs, but when it doesn't, and vision models generating structured output from a specific image usually don't, you need supervised training to create that diversity first.
+
+## What's Next
+
+Next I want to collect a much larger and more diverse dataset with real-world PDFs, not just synthetically rendered ones, and properly benchmark these fine-tuned models against established systems using the [olmOCR-bench](https://huggingface.co/datasets/allenai/olmOCR-bench) dataset to see where a small fine-tuned VLM actually stands in the broader landscape.
+
+---
+
+[@int2float](https://x.com/int2float)
