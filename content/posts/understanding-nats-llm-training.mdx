@@ -1,0 +1,74 @@
+---
+title: "Understanding NATs in LLM Training"
+description: "A rough guide to what NATs actually mean in LLM training loss — because I kept seeing this term everywhere and finally decided to understand it."
+date: 2026-03-21
+published: true
+tags: ["AI", "LLM", "machine learning", "training", "technical"]
+author: "Paras Sharma"
+---
+
+If you've spent any time reading ML papers or staring at training logs, you've probably seen this term thrown around constantly: "Loss went down from 3.2 to 2.8 nats." It sounds impressive, and everyone nods along as if they know exactly what it means, but honestly, I was just pretending to understand it for the longest time. Eventually, I got tired of that and decided to actually figure out what NATs are and why they matter, so let me break it down the way I wish someone had explained it to me.
+
+## What Even Are NATs?
+
+NAT stands for Natural unit of information, and it's sometimes also called a "nit" or "nat" depending on who's writing the paper, which admittedly makes the naming situation a bit confusing. Essentially, it's the same concept as bits, but instead of being measured with a base-2 logarithm like bits are, it's measured using the natural logarithm (ln), so it's really just a different scale for measuring the same underlying thing.
+
+When people in the LLM world talk about "nats," they're almost always referring to the negative log-likelihood loss, which is basically the cross-entropy loss calculated using natural logarithms instead of base-2 logarithms. Once you understand that connection, the whole concept becomes much less mysterious.
+
+## The Core Idea
+
+During training, what's actually happening is that your LLM is constantly trying to predict the next token in a sequence. For each position in the text, the model outputs a probability distribution over its entire vocabulary, which could be something like 50,000 tokens or whatever size your vocabulary happens to be. The loss calculation is actually quite straightforward once you see it written out: it's just the negative natural logarithm of the probability assigned to the correct token.
+
+So if your model assigns a probability of 0.9 to the correct next word, the loss works out to −ln(0.9), which is approximately 0.105 nats, meaning the model was pretty confident and got rewarded for it. On the other hand, if the model only assigns a probability of 0.01 to the correct word, you get −ln(0.01), which is roughly 4.6 nats, indicating the model was basically caught off guard. The fundamental principle is simple: lower nats mean better predictions, and that's really all you need to remember at a high level.
+
+## Weather Forecaster Analogy
+
+I find it helpful to think about this through an analogy that makes the intuition clearer. Imagine you're a weather forecaster, and every single day you're being graded based on your confidence levels about whether it's going to rain or not. Each morning, you make your announcement with some degree of certainty, like "I'm 80% sure it'll rain today," and then reality unfolds and it either rains or it doesn't.
+
+Your score, measured in nats, depends entirely on how much confidence you gave to what actually ended up happening. If you said there was an 80% chance of rain and it did rain, your penalty is −ln(0.80), which equals about 0.22 nats, so you did pretty well and demonstrated good forecasting. But if you said there was only a 10% chance of rain and then it actually rained, your penalty jumps to −ln(0.10), which is around 2.30 nats, meaning you got completely surprised and your forecast was way off. The best case scenario is when you say there's a 99% chance of rain and it actually rains, giving you −ln(0.99) or roughly 0.01 nats, which is nearly perfect prediction.
+
+Your goal as a forecaster, accumulated over thousands of days of predictions, is to get your average nats as low as possible. That's exactly what an LLM is doing during training, except instead of thousands of weather predictions, it's making billions of token predictions across massive amounts of text.
+
+## Why Natural Logarithm Though?
+
+There's actually a pretty practical reason why we use the natural logarithm instead of other bases, and it comes down to the mathematics of neural network optimization. Since the whole training process relies on gradient descent and backpropagation, which are fundamentally calculus-based operations, using the natural logarithm makes the math work out much more elegantly. The derivative of ln(x) is simply 1/x, which is about as clean and efficient as you can get for gradient computation, and those kinds of mathematical conveniences add up when you're doing billions of calculations.
+
+The relationship between nats and bits is also straightforward to convert: one nat is approximately 1.44 bits, so they're really just measuring the same underlying concept on different scales, kind of like how Celsius and Fahrenheit both measure temperature but use different reference points.
+
+## What Do Nats Mean at Scale?
+
+To get a sense of what these numbers actually mean in practice, let's consider an LLM with a vocabulary of 50,000 tokens, which is pretty typical. If you were just randomly guessing, you'd assign equal probability to every token, which would be 1/50,000, and that would give you −ln(1/50,000), which works out to approximately 10.82 nats per token. This represents your worst meaningful baseline, the point where the model has learned absolutely nothing and is just throwing darts at a massive vocabulary board.
+
+A well-trained model, on the other hand, typically achieves somewhere around 2.0 to 3.5 nats per token on normal text, which means the model has learned to narrow down its prediction space from 50,000 random options to something more like e² to e³·⁵, which translates to roughly 7 to 33 "effective choices" per token. That's a dramatic improvement and shows the model has genuinely learned the structure and patterns of language.
+
+Near perfection, which would be approaching 0 nats, would mean the model almost always knows the next token with near-certainty, but that's actually impossible for natural language because language itself is inherently unpredictable in many contexts, and there's genuine ambiguity and creativity in how people write and speak.
+
+## The "Effective Choices" Intuition
+
+This concept connects directly to something called perplexity, which is just e raised to the power of your average loss in nats. You can think of perplexity as answering the question: "On average, how many equally-likely words is the model choosing between when it makes a prediction?"
+
+When your average loss is 1.0 nats, your perplexity is around 2.7, which means it's like picking between roughly 3 words. At 2.0 nats, perplexity jumps to about 7.4, so you're choosing between around 7 words. By the time you're at 3.0 nats, perplexity is roughly 20, meaning the model is choosing between about 20 plausible options. And if you're up at 4.0 nats, your perplexity is around 55, which suggests the model is really struggling and seeing way too many plausible options.
+
+## Detective Analogy
+
+Another way I like to think about this is to imagine the LLM as a detective reading through a story one word at a time, trying to guess what comes next before flipping the page to see the actual word. The quality of the detective's guess depends entirely on how much context they have available.
+
+When the context is strong, like reading "The cat sat on the ___," the detective can be very confident in their predictions, narrowing it down to words like "mat," "floor," or "chair," and the loss ends up being low because the context has dramatically constrained the possibilities. But when the context is weak, like just reading "The ___," the next word could be almost anything in the entire vocabulary, so the loss is high because there's genuine uncertainty and not much to go on.
+
+Sometimes you get medium-strength context, like "I hereby declare this meeting ___," where there's a strong signal pointing toward words like "adjourned" or "open," and again the loss is low because the surrounding context provides enough clues to make a confident prediction. Training is fundamentally the process of making this detective smarter over time, teaching it to better use context clues, grammatical patterns, world knowledge, and statistical regularities to reduce the average surprise it experiences across millions and millions of sentences.
+
+## Why This Actually Matters
+
+When researchers publish a paper saying "we reduced loss from 3.2 to 2.8 nats," that difference of 0.4 nats might not sound like much at first, but it's actually quite significant in practical terms. If you translate that improvement into perplexity, you're going from approximately 24.5 down to about 16.4, which means the model went from effectively choosing among around 25 plausible words to choosing among only 16. That kind of reduction translates directly into noticeably more coherent, more accurate, and generally higher-quality text generation, and you can usually see the difference clearly when you actually use the model.
+
+---
+
+## TL;DR
+
+At the end of the day, nats are just a way of measuring how surprised the model is, on average, by what actually appears in the text. Training is the process of systematically making the model less and less surprised as it encounters more data and learns better patterns. Lower nats mean the model is more confident and more accurate in its predictions, which ultimately means better performance on whatever task you're trying to accomplish.
+
+That's really all there is to it—it's not nearly as scary or mysterious as it first appears once you break it down and understand what's actually being measured.
+
+---
+
+*Written because I was tired of pretending I understood this when reading papers. Now I actually do.*
