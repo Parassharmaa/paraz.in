@@ -109,6 +109,18 @@ export const RESUME_DATA = {
   ] as const,
   research: [
     {
+      title: "Flash Flood Susceptibility Mapping",
+      fullTitle: "Flood Risk Follows Valleys, Not Grids: Graph Neural Networks for Flash Flood Susceptibility Mapping in Himachal Pradesh with Conformal Uncertainty Quantification",
+      description:
+        "Graph Neural Network approach for flash flood susceptibility mapping that respects watershed connectivity. Achieved AUC = 0.978 using GraphSAGE on 460 sub-watersheds with six-year SAR flood inventory. Features conformal prediction for statistically guaranteed 90% coverage intervals and identifies 1,457 km of high-risk highways.",
+      year: "2026",
+      tags: ["GNN", "Remote Sensing", "Conformal Prediction", "Flood Mapping"],
+      links: {
+        paper: "https://arxiv.org/abs/2603.15681",
+        code: "https://github.com/Parassharmaa/flash-flood-zones-hp",
+      },
+    },
+    {
       title: "WhisperGate",
       fullTitle: "WhisperGate: Silence-Aware Gating for Hallucination-Free Speech Recognition with Frozen Whisper",
       description:
