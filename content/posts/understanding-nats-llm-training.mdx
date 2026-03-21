@@ -17,37 +17,226 @@ When people in the LLM world talk about "nats," they're almost always referring 
 
 ## The Core Idea
 
-During training, what's actually happening is that your LLM is constantly trying to predict the next token in a sequence. For each position in the text, the model outputs a probability distribution over its entire vocabulary, which could be something like 50,000 tokens or whatever size your vocabulary happens to be. The loss calculation is actually quite straightforward once you see it written out: it's just the negative natural logarithm of the probability assigned to the correct token.
+During training, what's actually happening is that your LLM is constantly trying to predict the next token in a sequence. For each position in the text, the model outputs a probability distribution over its entire vocabulary, which could be something like 50,000 tokens or whatever size your vocabulary happens to be. The loss calculation is actually quite straightforward once you see it written out:
 
-So if your model assigns a probability of 0.9 to the correct next word, the loss works out to −ln(0.9), which is approximately 0.105 nats, meaning the model was pretty confident and got rewarded for it. On the other hand, if the model only assigns a probability of 0.01 to the correct word, you get −ln(0.01), which is roughly 4.6 nats, indicating the model was basically caught off guard. The fundamental principle is simple: lower nats mean better predictions, and that's really all you need to remember at a high level.
+```
+Loss = -ln(P(correct token))
+
+where:
+  P(correct token) = probability the model assigned to the actual next token
+  ln = natural logarithm (base e ≈ 2.718)
+```
+
+Let's walk through some concrete examples to make this tangible:
+
+**Example 1: High Confidence (Good Prediction)**
+```
+Model's prediction: P("cat") = 0.9
+Actual next word: "cat"
+
+Loss = -ln(0.9) 
+     = -(-0.105)
+     = 0.105 nats
+
+Interpretation: Low loss! Model was confident and correct.
+```
+
+**Example 2: Low Confidence (Poor Prediction)**
+```
+Model's prediction: P("elephant") = 0.01
+Actual next word: "elephant"
+
+Loss = -ln(0.01)
+     = -(-4.605)
+     = 4.605 nats
+
+Interpretation: High loss! Model was surprised by the correct answer.
+```
+
+**Example 3: Near Perfect**
+```
+Model's prediction: P("the") = 0.99
+Actual next word: "the"
+
+Loss = -ln(0.99)
+     = 0.010 nats
+
+Interpretation: Almost zero loss. Model was nearly certain.
+```
+
+The fundamental principle is simple: lower nats mean better predictions, and that's really all you need to remember at a high level.
 
 ## Weather Forecaster Analogy
 
 I find it helpful to think about this through an analogy that makes the intuition clearer. Imagine you're a weather forecaster, and every single day you're being graded based on your confidence levels about whether it's going to rain or not. Each morning, you make your announcement with some degree of certainty, like "I'm 80% sure it'll rain today," and then reality unfolds and it either rains or it doesn't.
 
-Your score, measured in nats, depends entirely on how much confidence you gave to what actually ended up happening. If you said there was an 80% chance of rain and it did rain, your penalty is −ln(0.80), which equals about 0.22 nats, so you did pretty well and demonstrated good forecasting. But if you said there was only a 10% chance of rain and then it actually rained, your penalty jumps to −ln(0.10), which is around 2.30 nats, meaning you got completely surprised and your forecast was way off. The best case scenario is when you say there's a 99% chance of rain and it actually rains, giving you −ln(0.99) or roughly 0.01 nats, which is nearly perfect prediction.
+Your score, measured in nats, depends entirely on how much confidence you gave to what actually ended up happening. Let's work through a week of forecasts to see how this plays out:
+
+```
+Day 1 - You predict: 80% rain, Reality: It rains ✓
+  Score = -ln(0.80) = 0.223 nats (good!)
+
+Day 2 - You predict: 10% rain, Reality: It rains ✓
+  Score = -ln(0.10) = 2.303 nats (terrible! caught off guard)
+
+Day 3 - You predict: 99% rain, Reality: It rains ✓
+  Score = -ln(0.99) = 0.010 nats (nearly perfect!)
+
+Day 4 - You predict: 60% rain, Reality: It rains ✓
+  Score = -ln(0.60) = 0.511 nats (decent)
+
+Day 5 - You predict: 95% rain, Reality: It rains ✓
+  Score = -ln(0.95) = 0.051 nats (excellent)
+
+Average score over 5 days:
+  (0.223 + 2.303 + 0.010 + 0.511 + 0.051) / 5 = 0.620 nats
+
+Your perplexity: e^0.620 ≈ 1.86
+(Meaning you're effectively choosing between ~2 outcomes, which makes 
+sense for binary weather prediction!)
+```
 
 Your goal as a forecaster, accumulated over thousands of days of predictions, is to get your average nats as low as possible. That's exactly what an LLM is doing during training, except instead of thousands of weather predictions, it's making billions of token predictions across massive amounts of text.
 
 ## Why Natural Logarithm Though?
 
-There's actually a pretty practical reason why we use the natural logarithm instead of other bases, and it comes down to the mathematics of neural network optimization. Since the whole training process relies on gradient descent and backpropagation, which are fundamentally calculus-based operations, using the natural logarithm makes the math work out much more elegantly. The derivative of ln(x) is simply 1/x, which is about as clean and efficient as you can get for gradient computation, and those kinds of mathematical conveniences add up when you're doing billions of calculations.
+There's actually a pretty practical reason why we use the natural logarithm instead of other bases, and it comes down to the mathematics of neural network optimization. Since the whole training process relies on gradient descent and backpropagation, which are fundamentally calculus-based operations, using the natural logarithm makes the math work out much more elegantly.
 
-The relationship between nats and bits is also straightforward to convert: one nat is approximately 1.44 bits, so they're really just measuring the same underlying concept on different scales, kind of like how Celsius and Fahrenheit both measure temperature but use different reference points.
+Here's why mathematically:
+
+```
+For f(x) = ln(x):
+  f'(x) = 1/x
+
+This is incredibly clean for gradient computation!
+
+Compare to log₂(x):
+  f'(x) = 1/(x · ln(2))
+  
+The extra ln(2) constant makes every gradient calculation slightly messier.
+```
+
+The relationship between nats and bits is also straightforward to convert:
+
+```
+1 nat = 1/ln(2) bits ≈ 1.44 bits
+
+Conversion formula:
+  bits = nats × 1.44
+  nats = bits × 0.693
+
+Example:
+  3.0 nats = 3.0 × 1.44 = 4.32 bits
+```
+
+So they're really just measuring the same underlying concept on different scales, kind of like how Celsius and Fahrenheit both measure temperature but use different reference points. The choice to use nats is purely about computational convenience during training.
 
 ## What Do Nats Mean at Scale?
 
-To get a sense of what these numbers actually mean in practice, let's consider an LLM with a vocabulary of 50,000 tokens, which is pretty typical. If you were just randomly guessing, you'd assign equal probability to every token, which would be 1/50,000, and that would give you −ln(1/50,000), which works out to approximately 10.82 nats per token. This represents your worst meaningful baseline, the point where the model has learned absolutely nothing and is just throwing darts at a massive vocabulary board.
+To get a sense of what these numbers actually mean in practice, let's consider an LLM with a vocabulary of 50,000 tokens, which is pretty typical. Here's how the math works out across different levels of model quality:
 
-A well-trained model, on the other hand, typically achieves somewhere around 2.0 to 3.5 nats per token on normal text, which means the model has learned to narrow down its prediction space from 50,000 random options to something more like e² to e³·⁵, which translates to roughly 7 to 33 "effective choices" per token. That's a dramatic improvement and shows the model has genuinely learned the structure and patterns of language.
+**Random Baseline (No Learning)**
+```python
+vocab_size = 50_000
+random_probability = 1 / vocab_size
+
+loss = -math.log(random_probability)
+# loss ≈ 10.82 nats per token
+
+perplexity = math.exp(loss)
+# perplexity = 50,000 (choosing randomly from all words!)
+```
+
+This represents your worst meaningful baseline, the point where the model has learned absolutely nothing and is just throwing darts at a massive vocabulary board.
+
+**Well-Trained Model**
+```python
+# Typical loss for a good model
+average_loss = 2.5  # nats per token
+
+effective_choices = math.exp(average_loss)
+# effective_choices ≈ 12.18
+
+# The model has narrowed down from 50,000 options to ~12!
+reduction_factor = vocab_size / effective_choices
+# reduction_factor ≈ 4,100x better than random
+```
+
+A well-trained model typically achieves somewhere around 2.0 to 3.5 nats per token on normal text, which means:
+
+| Loss (nats) | Effective Choices | Reduction from Random |
+|-------------|-------------------|------------------------|
+| 2.0 | ~7 words | 7,100x better |
+| 2.5 | ~12 words | 4,100x better |
+| 3.0 | ~20 words | 2,500x better |
+| 3.5 | ~33 words | 1,500x better |
+
+That's a dramatic improvement and shows the model has genuinely learned the structure and patterns of language.
 
 Near perfection, which would be approaching 0 nats, would mean the model almost always knows the next token with near-certainty, but that's actually impossible for natural language because language itself is inherently unpredictable in many contexts, and there's genuine ambiguity and creativity in how people write and speak.
 
 ## The "Effective Choices" Intuition
 
-This concept connects directly to something called perplexity, which is just e raised to the power of your average loss in nats. You can think of perplexity as answering the question: "On average, how many equally-likely words is the model choosing between when it makes a prediction?"
+This concept connects directly to something called perplexity, which gives you an intuitive way to understand what those NATs numbers really mean. The formula is beautifully simple:
 
-When your average loss is 1.0 nats, your perplexity is around 2.7, which means it's like picking between roughly 3 words. At 2.0 nats, perplexity jumps to about 7.4, so you're choosing between around 7 words. By the time you're at 3.0 nats, perplexity is roughly 20, meaning the model is choosing between about 20 plausible options. And if you're up at 4.0 nats, your perplexity is around 55, which suggests the model is really struggling and seeing way too many plausible options.
+```
+Perplexity = e^(average loss in nats)
+
+where:
+  e ≈ 2.718 (Euler's number)
+  average loss = mean NATs across all predictions
+```
+
+You can think of perplexity as answering the question: "On average, how many equally-likely words is the model choosing between when it makes a prediction?"
+
+Let's calculate this for different loss levels:
+
+**Low Loss (Good Model)**
+```python
+import math
+
+average_loss = 1.0  # nats
+perplexity = math.exp(average_loss)
+# perplexity ≈ 2.72
+
+# Interpretation: Like choosing between ~3 words
+```
+
+**Medium Loss (Decent Model)**
+```python
+average_loss = 2.0  # nats
+perplexity = math.exp(average_loss)
+# perplexity ≈ 7.39
+
+# Interpretation: Like choosing between ~7 words
+```
+
+**Higher Loss (Struggling Model)**
+```python
+average_loss = 3.0  # nats
+perplexity = math.exp(average_loss)
+# perplexity ≈ 20.09
+
+# Interpretation: Like choosing between ~20 words
+```
+
+**Very High Loss (Poor Model)**
+```python
+average_loss = 4.0  # nats
+perplexity = math.exp(average_loss)
+# perplexity ≈ 54.60
+
+# Interpretation: Model is really struggling, too many options
+```
+
+Here's a quick reference table:
+
+| Average Loss | Perplexity | What This Feels Like |
+|--------------|------------|----------------------|
+| 1.0 nats | ~2.7 | Choosing between ~3 words |
+| 2.0 nats | ~7.4 | Choosing between ~7 words |
+| 3.0 nats | ~20 | Choosing between ~20 words |
+| 4.0 nats | ~55 | Struggling, many options |
 
 ## Detective Analogy
 
@@ -59,7 +248,44 @@ Sometimes you get medium-strength context, like "I hereby declare this meeting _
 
 ## Why This Actually Matters
 
-When researchers publish a paper saying "we reduced loss from 3.2 to 2.8 nats," that difference of 0.4 nats might not sound like much at first, but it's actually quite significant in practical terms. If you translate that improvement into perplexity, you're going from approximately 24.5 down to about 16.4, which means the model went from effectively choosing among around 25 plausible words to choosing among only 16. That kind of reduction translates directly into noticeably more coherent, more accurate, and generally higher-quality text generation, and you can usually see the difference clearly when you actually use the model.
+When researchers publish a paper saying "we reduced loss from 3.2 to 2.8 nats," that difference of 0.4 nats might not sound like much at first, but let's actually calculate what that means:
+
+```python
+# Before: baseline model
+old_loss = 3.2
+old_perplexity = math.exp(old_loss)
+# old_perplexity ≈ 24.5 words
+
+# After: improved model
+new_loss = 2.8
+new_perplexity = math.exp(new_loss)
+# new_perplexity ≈ 16.4 words
+
+# Improvement
+reduction = old_perplexity - new_perplexity
+# reduction ≈ 8.1 fewer "effective choices"
+
+percentage_improvement = (reduction / old_perplexity) * 100
+# percentage_improvement ≈ 33% reduction in uncertainty!
+```
+
+So that 0.4 nat improvement means the model went from effectively choosing among around 25 plausible words to choosing among only 16. That's a 33% reduction in uncertainty, which translates directly into noticeably more coherent, more accurate, and generally higher-quality text generation. You can usually see the difference clearly when you actually use the model.
+
+Here's a real-world example of what this looks like:
+
+```
+Prompt: "The capital of France is"
+
+Model at 3.2 nats (perplexity ~24):
+  Top predictions: Paris (35%), Lyon (8%), France (6%), located (4%), ...
+  [spreading probability across ~24 plausible options]
+
+Model at 2.8 nats (perplexity ~16):
+  Top predictions: Paris (68%), the (5%), located (3%), ...
+  [concentrating probability on fewer, better choices]
+```
+
+The better model is much more confident in the correct answer ("Paris") and wastes less probability mass on unlikely alternatives.
 
 ## How NATs Drive Real Training Decisions
 
