@@ -7,7 +7,7 @@ export const RESUME_DATA = {
   locationLink: null,
   about: "Read, Write, Execute",
   summary:
-    "Software engineer with 6+ years of experience across full-stack development, AI/ML, and data science. Experienced in leading technical architecture and delivering AI-driven products end-to-end. At Autify, works on AI-powered Quality Assurance platforms, including LLM-based test generation, AI-native workflow design, and cross-platform desktop applications. Previously developed impactful AI solutions such as early autism detection and personalized therapy systems.",
+    "Software engineer and AI researcher with 6+ years of experience spanning full-stack development, machine learning research, and data science. Published research in Graph Neural Networks for disaster prediction (flash flood mapping achieving 0.978 AUC), speech recognition hallucination mitigation, and continuous-time neural architectures. At Autify, leads AI-powered Quality Assurance platforms with LLM-based test generation and cross-platform desktop applications. Previously co-founded Kidaura, developing GenAI-driven curriculum systems and ML-based autism screening models with 86% sensitivity. Salzburg Global Seminar Fellow (Japan-India Transformative Technology Network, 2023).",
   avatarUrl: "paraz.png",
   personalWebsiteUrl: "https://paraz.in",
   contact: {
