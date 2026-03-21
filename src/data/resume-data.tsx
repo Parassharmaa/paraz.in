@@ -1,4 +1,4 @@
-import { GitHubIcon, LinkedInIcon, XIcon } from "@/components/icons";
+import { GitHubIcon, LinkedInIcon, XIcon, GoogleScholarIcon } from "@/components/icons";
 
 export const RESUME_DATA = {
   name: "Paras Sharma",
@@ -28,6 +28,11 @@ export const RESUME_DATA = {
         name: "X",
         url: "https://x.com/int2float",
         icon: XIcon,
+      },
+      {
+        name: "Google Scholar",
+        url: "https://scholar.google.com/citations?user=tUN0lfwAAAAJ&hl=en",
+        icon: GoogleScholarIcon,
       },
     ],
   },
