@@ -1,0 +1,203 @@
+---
+title: "A Small LLM and a Point-to-Click Model Beat a Big Multimodal Agent"
+description: "I built a computer-use agent by splitting it in two: a small reasoning model that plans, and a vision-grounding model that turns 'click the blue Sign In button' into pixel coordinates. Cheaper, faster, and weirdly more reliable than a single big multimodal call."
+date: 2026-05-08
+published: true
+tags: ["AI", "agents", "computer-use", "VLM", "architecture"]
+author: "Paras Sharma"
+---
+
+For the last few weeks I've been building a computer-use agent: type a prompt in plain English, the agent opens a fresh Linux desktop in the cloud, points and clicks like a person, and finishes the task. Sign in to a site. Fill a form. Read a doc. The kind of thing you'd hand a junior contractor for.
+
+The obvious way to build this is to throw the screenshot at one big multimodal model and ask it to spit out clicks. It works. It's also slow, expensive, and surprisingly fragile.
+
+What works better — at least so far — is splitting the agent in two:
+
+1. A **small reasoning LLM** that decides what to do next, in words.
+2. A **vision-grounding model** that takes those words and turns them into pixel coordinates.
+
+Two cheap calls per step instead of one expensive one. And the steps are *more* reliable, not less. Here's why.
+
+## The two-model loop
+
+```
+                     ┌──────────────────┐
+       screenshot →  │  Reasoning LLM   │  → { action, target,
+                     │  (plans next     │      reasoning, …  }
+                     │   small step)    │
+                     └────────┬─────────┘
+                              │ "click the blue Sign In
+                              │  button at top-right"
+                              ▼
+                     ┌──────────────────┐
+                     │  Grounding model │  → (x, y) ∈ [0, 1]²
+                     │  (point-to-pixel)│
+                     └────────┬─────────┘
+                              │
+                              ▼
+                     ┌──────────────────┐
+                     │   Sandbox VM     │
+                     │  xdotool dispatch│  → new screenshot
+                     └────────┬─────────┘
+                              │
+                              └──────── loop ────────┐
+                                                     │
+                                            (back to top)
+```
+
+Each step is a tight cycle: take a screenshot, ask the small LLM what to do, ask the grounding model where, dispatch the action, capture a fresh screenshot, repeat.
+
+The reasoning LLM never sees pixel coordinates. It outputs strings:
+
+```json
+{
+  "action": "click",
+  "target": "the blue Sign In button at top-right of the page",
+  "reasoning": "Form is loaded, login flow needs to start here"
+}
+```
+
+The grounding model never sees the user's prompt or the plan tree. It sees a screenshot and a string, and returns a normalised `(x, y)`. The sandbox multiplies by screen width/height and fires `xdotool click`.
+
+That separation is the entire trick.
+
+## Why split it?
+
+Three reasons, in order of how much they surprised me.
+
+### 1. Each part does one thing well
+
+A multimodal model that has to plan AND look has two jobs at once, in the same forward pass. It hallucinates clicks at coordinates that look right but aren't. It also "drifts" — if the planning is wrong, the click is wrong, and you can't tell which broke.
+
+The grounding model only does one thing: given an image and a noun phrase, produce the pixel where that thing lives. Single-task models are smaller and more accurate at their thing than a generalist twice their size.
+
+The reasoning LLM only has to pick the next action and describe the target in plain English. That's something even sub-billion-parameter models do well. You don't need a flagship to write "click the blue Sign In button".
+
+### 2. The cost math is upside-down
+
+You'd expect two calls to be more expensive than one. They're not.
+
+A single big multimodal call costs roughly:
+
+```
+big_call_cost = (image_tokens + prompt_tokens + output_tokens) × big_model_price
+```
+
+Image tokens dominate. A 1280×800 screenshot ends up north of 1000 tokens on most multimodal models. Send 30 of those over a session and you're shipping 30k+ image tokens per task at flagship prices.
+
+Two specialised calls cost:
+
+```
+small_call_cost   = (image_tokens + prompt_tokens + output_tokens) × small_model_price
+grounding_cost    = fixed_per_call_price                          // tiny model, often a flat fee
+```
+
+The small model still pays for the image tokens, but at a much lower per-token price. The grounding model is small, dedicated, and many providers charge a flat per-call fee that's an order of magnitude cheaper than per-image flagship pricing.
+
+Net result on the agent I'm running: roughly **5-10× cheaper per session** than a single-flagship-model setup, for tasks of equivalent difficulty.
+
+### 3. You can retry the cheap part
+
+When the grounding model picks the wrong icon — and it sometimes does, especially on dense UIs with two visually similar buttons — the fix is to retry with a more specific noun phrase. "the Submit button" → "the green Submit button at the bottom of the order form".
+
+If your planner and your grounder are the same model, retrying means another full multimodal call, which means another flagship-priced image. If they're separate, the retry is a sub-cent grounding-only call.
+
+This shows up as a real reliability number. With the split architecture I can ask the grounder for *candidates*: give me up to 5 plausible matches. If two candidates are visually far apart on the screen, the target description was ambiguous, and the planner gets a soft "this was unclear, try again with a more specific phrase" signal on the next step. With one model, you don't get to ask that question without paying again.
+
+## The action set
+
+The reasoning LLM only needs a small fixed vocabulary. The agent I'm running uses:
+
+| Action | What it does |
+|---|---|
+| `click` / `double_click` / `right_click` | Routed through the grounder; takes a target string |
+| `type` | Literal text typed at current focus |
+| `key` | Single key or combo (Return, ctrl+l, etc.) |
+| `scroll` | Direction + amount |
+| `navigate` | Open a URL in the browser |
+| `wait` | Pause N ms (used while pages settle) |
+| `done` | Final summary string |
+
+Nine actions cover ~all everyday computer tasks. The constraint is liberating — the planner can't invent novel actions, can't drag-and-drop in weird ways, can't fall into the "let me write a Python script that automates this" trap that the bigger models love.
+
+## Memory: scratchpad and plan tree
+
+A 30-step task can't fit in any model's context window if you keep every screenshot. So you do two things:
+
+```
+   ┌───────────────────────────┐
+   │  System prompt            │
+   │  + scratchpad (notes)     │  ← survives every step,
+   │  + plan tree (revisable)  │     never truncated
+   │  + agent memories         │
+   ├───────────────────────────┤
+   │  Last 5 step messages     │  ← recent action history
+   │  + LATEST screenshot only │  ← older ones become text
+   └───────────────────────────┘
+```
+
+**Scratchpad**: the planner can append a line on any step. "User confirmed checkout — total was $42." That goes into every future system prompt. It's the thing the model "remembers" even after older messages roll out of the context window.
+
+**Plan tree**: a list of pending / in-progress / done sub-tasks the planner can revise per step. This stops the model from declaring `done` after step 1 of a 5-step plan — there's an explicit "you said you'd do X, you haven't yet" signal in the prompt.
+
+**Agent memories**: cross-session key-value notes the user can prepopulate. "My GitHub username is paras." Loaded once at session start. The model can write back to memory when it learns something durable.
+
+The combined effect is that the agent stays coherent across long sessions even though only the most recent screenshot is in the message list. Older screenshots get replaced by their captions ("a Google search results page"). You'd be surprised how rarely that hurts.
+
+## Verification: closing the loop
+
+Every action the planner takes is a hypothesis. After the action lands, the grounder is also a verifier:
+
+```
+planner: { action: "click", target: "Sign In",
+           verify: "an email + password form is now visible" }
+   ↓
+sandbox: dispatches click, captures screenshot
+   ↓
+grounder: query("does this screenshot show: an email + password form?")
+   ↓
+result: yes / no / ambiguous → recorded on the step
+```
+
+When verification fails, the planner sees it in the next step's history and can recover. When it succeeds, you have a much stronger "this step actually worked" signal than just "the action didn't throw an exception".
+
+A second verification fires on `done`. Before declaring victory, ask the grounder: did the agent actually complete the original prompt? It's a 500ms call and it catches the silent-regression failure mode where the planner thinks it's done but the page is wrong (auth wall, error toast, half-loaded state). The done-step still terminates as done — but the verify result lands on the step record so the user can see "soft uncertain" successes flagged visually.
+
+## Reliability: retry every transient
+
+```
+Sandbox action  ── one retry on flaky xdotool ──┐
+Grounding call  ── one retry on 5xx / network  ─┤
+Planner call    ── one retry on 5xx / 429       ─┴── otherwise propagate
+```
+
+One retry is the right number. Zero gives you bad ergonomics on a flaky network. Three turns brief outages into 30-second user-visible latency. One catches ~95% of real transient blips.
+
+The retry budget is per-attempt, not per-session — there's no "circuit breaker" needed when the upstream is genuinely down because the underlying call already has a 20s timeout.
+
+## Why not just one bigger model?
+
+I've tried this. It's still the obvious comparison every time someone asks. A few things kept biting me:
+
+- **Cost grows with screenshot resolution.** Sending higher-res images to the planner would help it click better, but image tokens scale fast and budgets blow up.
+- **You lose the soft-signal channel.** With two models, the grounder's *number of plausible candidates* is itself useful information. With one model, you just get a coordinate or no coordinate.
+- **Hard to swap.** When a better grounding model ships, I swap it in by changing one HTTP client. With the monolithic agent, every model upgrade is a full migration.
+- **Reasoning models are advancing fast at small scales.** Two years ago you needed a flagship to plan a 20-step task. Now sub-flagship reasoning models do it well. The trend is in the small-model favour.
+
+## Where it falls down
+
+This isn't free. The costs I've found:
+
+- **Two model providers.** You need an LLM endpoint and a grounding endpoint, with two sets of timeouts, retries, and cost dashboards.
+- **Latency in the right tail.** Two sequential calls per step means you eat the slower one's tail-latency. A planner-and-grounder roundtrip is faster than a flagship multimodal call on average but worse in the p99 case.
+- **Description fragility.** The planner's clicks are only as good as its noun phrases. "Click the button" is hopeless. "Click the green Submit button at the bottom of the form" works. Prompting matters more here than in a single-model setup, and the planner has to learn to be specific.
+
+Worth the trade for me.
+
+## Closing
+
+The pattern feels like it's going to generalise. Whenever you have a problem that decomposes cleanly into "what should we do" and "where exactly", and the "where" is a perception task with clear inputs/outputs, splitting the model in two seems to win on cost AND reliability.
+
+Same shape applies beyond computer-use: a planner that talks to a separate retriever, a separate code executor, a separate graph-walker. The unifying principle is that single-task models at the leaves are smaller, faster, and more accurate than one generalist trying to do everything in one forward pass.
+
+The flagship-everything era will end the day enough sub-tasks have a good open small model. Most of the way there already.
