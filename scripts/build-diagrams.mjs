@@ -45,3 +45,10 @@ async function main() {
 }
 
 await main();
+// @terrastruct/d2 spins a Node worker for the WASM runtime and does not
+// expose a teardown method, so the worker keeps the event loop alive
+// indefinitely after main() resolves. Without an explicit exit the
+// `pnpm build` chain hangs forever (which broke the Vercel deploy on
+// the first roll-out of this script). exitCode=0 is the default;
+// preserve any non-zero exitCode set on a per-file failure above.
+process.exit(process.exitCode ?? 0);
