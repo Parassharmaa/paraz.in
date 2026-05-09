@@ -1,0 +1,26 @@
+direction: down
+
+screenshot: Screenshot {
+  shape: cylinder
+}
+
+planner: "Reasoning LLM\n(plans next step)" {
+  shape: rectangle
+}
+
+grounder: "Grounding model\n(point-to-pixel)" {
+  shape: rectangle
+}
+
+sandbox: "Sandbox VM\nxdotool dispatch" {
+  shape: rectangle
+}
+
+screenshot -> planner
+planner -> grounder: "click the blue\nSign In button" {
+  style.italic: true
+}
+grounder -> sandbox: "(x, y)"
+sandbox -> screenshot: "new screenshot" {
+  style.stroke-dash: 3
+}

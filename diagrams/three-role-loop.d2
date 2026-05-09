@@ -1,0 +1,30 @@
+direction: down
+
+screenshot: Screenshot {
+  shape: cylinder
+}
+
+planner: "Reasoning LLM\n(planner role)" {
+  shape: rectangle
+}
+
+grounder: "Grounding model\n(point-to-pixel)" {
+  shape: rectangle
+}
+
+sandbox: "Sandbox VM\nxdotool dispatch" {
+  shape: rectangle
+}
+
+verifier: "Reasoning LLM\n(verifier role)" {
+  shape: rectangle
+  style.fill: "#fff7e0"
+}
+
+screenshot -> planner
+planner -> grounder: "target string"
+grounder -> sandbox: "(x, y)"
+sandbox -> verifier: "new screenshot"
+verifier -> planner: "yes / no / uncertain\n+ replan nudge" {
+  style.stroke-dash: 3
+}

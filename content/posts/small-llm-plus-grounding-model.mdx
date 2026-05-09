@@ -20,32 +20,9 @@ Two cheap calls per step instead of one expensive one. And the steps are *more* 
 
 ## The two-model loop
 
-```
-                     ┌──────────────────┐
-       screenshot →  │  Reasoning LLM   │  → { action, target,
-                     │  (plans next     │      reasoning, …  }
-                     │   small step)    │
-                     └────────┬─────────┘
-                              │ "click the blue Sign In
-                              │  button at top-right"
-                              ▼
-                     ┌──────────────────┐
-                     │  Grounding model │  → (x, y) ∈ [0, 1]²
-                     │  (point-to-pixel)│
-                     └────────┬─────────┘
-                              │
-                              ▼
-                     ┌──────────────────┐
-                     │   Sandbox VM     │
-                     │  xdotool dispatch│  → new screenshot
-                     └────────┬─────────┘
-                              │
-                              └──────── loop ────────┐
-                                                     │
-                                            (back to top)
-```
+<img src="/diagrams/two-model-loop.svg" alt="Two-model loop: screenshot flows into the reasoning LLM, which emits a plain-English target; the grounding model converts that target to pixel coordinates; the sandbox VM dispatches the action via xdotool and produces a fresh screenshot, restarting the cycle." className="mx-auto my-6" />
 
-Each step is a tight cycle: take a screenshot, ask the small LLM what to do, ask the grounding model where, dispatch the action, capture a fresh screenshot, repeat.
+Each step is a tight cycle. The agent captures a screenshot, asks the small reasoning LLM what to do next, hands that decision to the grounding model to translate into pixels, dispatches the action through xdotool, and captures a fresh screenshot to feed back into the next iteration. The same loop runs end-to-end without either model needing to know what the other one does.
 
 The reasoning LLM never sees pixel coordinates. It outputs strings:
 
@@ -122,111 +99,43 @@ Nine actions cover ~all everyday computer tasks. The constraint is liberating �
 
 ## Memory: scratchpad and plan tree
 
-A 30-step task can't fit in any model's context window if you keep every screenshot. So you do two things:
+A 30-step task cannot fit in any reasonable context window if every screenshot is kept verbatim, so the agent has to be opinionated about what it remembers and what it discards. The structure that works for me keeps a small core of durable state at the top of every prompt and a sliding window of recent steps at the bottom, with everything older replaced by the planner's own captions.
 
-```
-   ┌───────────────────────────┐
-   │  System prompt            │
-   │  + scratchpad (notes)     │  ← survives every step,
-   │  + plan tree (revisable)  │     never truncated
-   │  + agent memories         │
-   ├───────────────────────────┤
-   │  Last 5 step messages     │  ← recent action history
-   │  + LATEST screenshot only │  ← older ones become text
-   └───────────────────────────┘
-```
+The scratchpad is a free-form note the planner can append to on any step, and once written, that line becomes part of every future system prompt regardless of how many steps later the run continues. Lines like "user confirmed checkout, total was $42" or "noted that the search returned no results for the original query" stay live across the entire session and act as the model's long-term recollection. The plan tree is the matching mechanism for outstanding work: a list of pending, in-progress, and done sub-tasks that the planner revises in place per step, which stops the model from prematurely declaring `done` after the first step of a five-step plan because the system prompt now contains an explicit "you said you'd do X, and you haven't yet" reminder. The third channel is cross-session memory that the user can pre-populate before any session starts ("my GitHub username is paras"), loaded once at session start and writable by the planner whenever it learns something durable that should outlive the current run.
 
-**Scratchpad**: the planner can append a line on any step. "User confirmed checkout — total was $42." That goes into every future system prompt. It's the thing the model "remembers" even after older messages roll out of the context window.
-
-**Plan tree**: a list of pending / in-progress / done sub-tasks the planner can revise per step. This stops the model from declaring `done` after step 1 of a 5-step plan — there's an explicit "you said you'd do X, you haven't yet" signal in the prompt.
-
-**Agent memories**: cross-session key-value notes the user can prepopulate. "My GitHub username is paras." Loaded once at session start. The model can write back to memory when it learns something durable.
-
-The combined effect is that the agent stays coherent across long sessions even though only the most recent screenshot is in the message list. Older screenshots get replaced by their captions ("a Google search results page"). You'd be surprised how rarely that hurts.
+The combined effect is that the agent remains coherent over long sessions even though only the most recent screenshot is actually in the message list. Older screenshots are replaced by short captions the planner generates, and the loss of fidelity matters far less in practice than I expected.
 
 ## Verification: closing the loop
 
-Every action the planner takes is a hypothesis. After the action lands, a verifier checks whether the hypothesis held:
+Every action the planner emits is a hypothesis about what should happen next, and every step's verifier check is the test of whether that hypothesis held against the screenshot the action actually produced:
 
-```
-planner: { action: "click", target: "Sign In",
-           verify: "an email + password form is now visible" }
-   ↓
-sandbox: dispatches click, captures screenshot
-   ↓
-verifier: query("does this screenshot show: an email + password form?")
-   ↓
-result: yes / no / uncertain → recorded on the step
-```
+<img src="/diagrams/verify-flow.svg" alt="Verify flow: the planner's structured output includes a 'verify' string describing the expected post-action state; after the sandbox dispatches the click and captures a new screenshot, the verifier asks whether that screenshot shows the expected state, and the resulting yes / no / uncertain is recorded on the step." className="mx-auto my-6" />
 
-When verification fails, the planner sees it in the next step's history and can recover. When it succeeds, you have a much stronger "this step actually worked" signal than just "the action didn't throw an exception".
+When verification fails, the planner sees the failure in the next step's history and can recover by reframing the target or trying a different element. When verification succeeds, the resulting record carries a much stronger signal of progress than the bare fact that the action didn't throw an exception, because the verifier confirms that the screen now reflects the intended outcome rather than merely that no error bubbled up through xdotool.
 
 A second verification fires on `done`. Before declaring victory, ask the verifier: did the agent actually complete the original prompt? It's a 500ms call and it catches the silent-regression failure mode where the planner thinks it's done but the page is wrong (auth wall, error toast, half-loaded state). The done-step still terminates as done, but the verify result lands on the step record so the user can see "soft uncertain" successes flagged visually.
 
 ## Update: who verifies the verifier
 
-Initial version of this used the same Moondream grounding model as the verifier. The natural pick: same upstream, same outbound budget, same retry policy. It worked on smoke-test pages.
+The initial version of the architecture used the grounding model itself as the verifier, on the reasoning that the same upstream call had already loaded the screenshot and could answer a yes-or-no question about it for marginal additional cost. That setup worked well enough on the simple pages I tested it against during development, where the verifier's question was usually about coarse-grained scene properties like "did a new dialog appear" or "did the URL bar change", and the grounding model's general visual understanding was sufficient to answer them reliably.
 
-It started failing on dense ones. Specifically: forms with multiple buttons in a row, results pages with similar-looking cards, settings panels with nested toggles. The verifier would say "no, the goal isn't met" on a screenshot where the goal *was* met. False negatives, not false positives — and that's the worse direction. A false-negative verifier triggers a replan that the planner then has to talk itself out of, which costs steps, which costs grounder calls, which costs money and wall-clock.
+The architecture started losing accuracy as soon as I pointed it at denser real-world pages, particularly forms with several visually similar buttons placed in a row, search results pages where every card looks identical down to the typography, and settings panels where related toggles are clustered into nested groups. On these pages the verifier began producing false negatives at a rate that mattered, saying that a goal had not been met on screenshots where the goal had clearly been met to my eye. The asymmetric cost of a false negative was the part that surprised me: a false positive on the verifier wastes one step on a `done` that should have been a retry, but a false negative triggers a replan, and a replan costs a fresh planner call, a fresh grounder call, a fresh sandbox action, and a fresh verifier round, which adds up to roughly four times the cost of the symmetric error in the other direction. The user-visible part of that cost is also worse, since the agent hesitates and re-tries on a page the user can see is correct.
 
-The fix that worked: swap the verifier to the same small reasoning model the planner uses, and leave the grounder on the dedicated point-to-pixel model. Three roles instead of two:
+The fix that worked was to promote the verifier from a side-effect of the grounding model into its own logical role on the planner's reasoning model, while leaving the grounder as the dedicated point-to-pixel specialist that does its specific job well:
 
-```
-                     ┌────────────────────┐
-                     │  Reasoning LLM     │
-       screenshot →  │  (plans next step) │ → { action, target,
-                     │                    │     verify, … }
-                     └─────────┬──────────┘
-                               │ "click the blue Sign In button"
-                               ▼
-                     ┌────────────────────┐
-                     │  Grounding model   │ → (x, y) ∈ [0, 1]²
-                     │  (point-to-pixel)  │
-                     └─────────┬──────────┘
-                               │
-                               ▼
-                     ┌────────────────────┐
-                     │   Sandbox VM       │ → new screenshot
-                     │   xdotool dispatch │
-                     └─────────┬──────────┘
-                               │
-                               ▼
-                     ┌────────────────────┐
-                     │  Reasoning LLM     │ → yes / no / uncertain
-                     │  (verifier role)   │
-                     └─────────┬──────────┘
-                               │
-                               └─── back to plan with verify-result tag
-```
+<img src="/diagrams/three-role-loop.svg" alt="Three-role loop: the reasoning LLM in its planner role emits a target string, the grounding model converts that target to pixels, the sandbox dispatches the action, and the same reasoning LLM in its verifier role then judges the resulting screenshot and feeds the result (yes / no / uncertain plus an optional replan nudge) back to the planner." className="mx-auto my-6" />
 
-Why the reasoning model is a better verifier than the grounding model:
+The reason a reasoning model makes a better verifier than a grounding model is that the verifier's question is fundamentally about scene understanding rather than pixel localisation, and a question like "does this screenshot show the article body with no overlay covering the text" requires a model that has been trained to reason about what is on screen rather than where to point on screen. Point-pose grounding models are excellent at the latter and undertrained on the former, while small generalist multimodal models are competent at both and considerably better than the grounder on the verification axis specifically. The economics of the swap also worked out cleanly, because the verifier is the same small reasoning model the planner already calls, only with a different prompt and a stricter output schema, so the per-call cost stays at sub-flagship pricing rather than introducing a separate flagship-priced verifier into the pipeline.
 
-- **The verifier question is reasoning, not pointing.** "Does this screenshot show the article body, with no overlay covering the text?" needs scene understanding, not pixel localisation. Point-pose models are dedicated to the latter; they're undertrained on the former. Generalist multimodals — even small ones — beat them on this exact axis.
-- **The cost of a wrong NO is asymmetric.** A false-positive verifier (says yes when goal isn't met) wastes one step on a `done` that should have been a retry. A false-negative verifier (says no when goal IS met) triggers a replan, which is one more planner call, one more grounder call, one more sandbox action, plus another verifier round. Roughly 4× the cost of a wrong-yes, and worse for the user because the agent visibly hesitates on a page they can see is correct. Once I had numbers on the asymmetry it became hard to justify the cheaper-but-noisier verifier.
-- **You still don't pay flagship prices for it.** The verifier is the same small reasoning model that already plans, just called with a different prompt. Sub-flagship pricing, same image-token cost as the planner call would be anyway.
-
-The grounder stayed on the dedicated point-pose model. That's the right specialist for "where". The reasoning model owns "what" and "did it work" — both reasoning roles, both well within the small model's wheelhouse.
-
-This generalises the original split: not "plan + ground" but "**plan + ground + verify**", where the planner and verifier happen to be the same model played in different roles, and the grounder is its own thing.
+What this changes in the original story is the granularity at which the architecture decomposes. The blog post above presented a two-way split between planning and grounding, and the update is that the same reasoning model can usefully play more than one role across the loop, with the verifier role differing from the planner role only in the prompt and the output schema rather than in the underlying model. The principle generalises beyond two models: decompose the agent into the roles its work actually requires, then assign each role to whichever model wins on that role's specific axis, and let the orchestration code carry the differences in prompt and evaluation criteria. For computer-use today this means a small reasoning model handling planning and verification, a dedicated point-pose grounding model handling localisation with a refinement pass for ambiguous targets, and no flagship-priced model anywhere in the loop.
 
 ## Two more grounding upgrades that landed
 
-Once the verifier moved to the reasoning model, two improvements to the grounder itself fell out:
+Once the verifier moved to the reasoning model, two improvements to the grounding pipeline became practical to ship that would have been counter-productive with the noisier verifier in place. The first is iterative-refine grounding, which addresses the case where the grounder returns several plausible candidates because the target description matched multiple visually distinct elements on the screen. The refinement step crops a roughly thirty-percent window of the screenshot centred on the first candidate, re-points inside the crop where the target now occupies a much larger share of the input pixels, and maps the refined coordinates back to the original frame, which is the same pattern that appears in research projects under names like OS-Atlas and OmniParser-V2 and converges on a similar crop-and-re-point loop in each case. I do not think anyone has the optimal version of this technique yet, but the floor is materially higher than running the grounder once and accepting whatever the first call returned, and the instrumented counter tracks the four outcomes I care about: refinement that shifted the target by more than five percent on at least one axis (the win case), refinement that confirmed the first guess, refinement that was skipped because the first call was unambiguous, and refinement that returned nothing usable.
 
-**Iterative-refine grounding.** When the grounder returns multiple plausible candidates (the target description matched several visually distinct elements), crop a ~30%-of-axis window centered at the first guess and re-point inside the crop. The target now occupies many more pixels of the input image, which is exactly when small point-pose models do their best work. Coordinates map back to the original frame. This pattern shows up in a few research papers under names like "OS-Atlas" and "OmniParser-V2" — they all converge on the same crop-and-re-point loop. I don't think anyone has the optimal version yet, but the floor is much higher than no refinement at all. The instrumented counter tracks four outcomes: `improved` (refinement shifted the target ≥5% on one axis), `confirmed` (refinement agrees with the first guess), `skipped` (no ambiguity, refinement not run), `failed` (refinement returned nothing usable).
+The second upgrade is a verifier-driven replan nudge that fires when the verifier says no on a click or type action. The next planner turn now receives an explicit instruction to retry the action with a different target rather than the previous soft hint that the planner was free to ignore, and the loop is bounded by a small per-session cap (three nudges in current practice) so that a genuinely broken page cannot trap the agent in an infinite agreed-on-wrong loop. The cap is the load-bearing piece of this design: without it, a stuck verifier produces a self-reinforcing failure mode where the planner accepts the verifier's no, picks a marginally different target, fails the same way, and repeats; with it, the planner gets a small number of real second chances and then falls back to a `done` with a soft-uncertain flag that surfaces in the user-facing UI.
 
-**Verifier-driven replan nudge.** When the verifier says "no" on a click or type, the next planner turn gets an explicit "retry with a different target" instruction in its prompt. Bounded by a small per-session cap (3 in practice) so a genuinely broken page doesn't trap the loop. The cap matters: without it, a stuck verifier produces an infinite agreed-on-wrong loop. With it, the planner gets one to three real chances to find a different path before it falls back to declaring `done` with a soft-uncertain flag.
-
-Both of these were available the moment the verifier got reliable. With a noisy verifier the cap-three replan would have been three guaranteed-wasted retries on every borderline page; with the better verifier it's a real second-chance signal.
-
-## What this updates in the original story
-
-The two-model post above still holds: **single-task models at the leaves beat one generalist trying to do everything**. The update is that "leaves" is plural in two interesting ways:
-
-- **More than one specialist per task type.** The grounder is one specialist. The refinement-crop pass is the *same* specialist, called twice with different inputs. Same model, different input shape, materially better outcomes.
-- **The same generalist plays multiple roles.** Plan and verify are different prompts on the same small reasoning model. The split that matters isn't "different models per role" — it's "different *prompts* per role, with different evaluation criteria". The verifier prompt has a strict {yes, no, uncertain} schema; the planner prompt has the action vocabulary. Same upstream, very different responsibilities.
-
-The principle to take away isn't "two models". It's: **decompose the agent into roles, assign each role to whatever model wins on that role's specific axis, and let the orchestration code wire the prompts and outputs**. For computer-use today that means: small reasoning model for plan + verify, dedicated point-pose model for ground (with refine), one flagship-free flow.
+Neither of these upgrades would have been worth shipping with the old grounder-as-verifier setup, because a noisy verifier means the cap-three replan path becomes three guaranteed-wasted retries on every borderline page rather than a real recovery mechanism, which would have made the agent slower without making it more accurate. With the reasoning-model verifier in place, both upgrades pay off immediately, and the verify-fail-replan counter has become one of the more informative signals on the dashboard for spotting upstream UI changes that the planner has not yet adapted to.
 
 ## Reliability: retry every transient
 
@@ -236,33 +145,20 @@ Grounding call  ── one retry on 5xx / network  ─┤
 Planner call    ── one retry on 5xx / 429       ─┴── otherwise propagate
 ```
 
-One retry is the right number. Zero gives you bad ergonomics on a flaky network. Three turns brief outages into 30-second user-visible latency. One catches ~95% of real transient blips.
-
-The retry budget is per-attempt, not per-session — there's no "circuit breaker" needed when the upstream is genuinely down because the underlying call already has a 20s timeout.
+One retry is the right number for almost every transient I have seen, because zero retries gives users miserable ergonomics on flaky residential networks while three retries turns short upstream blips into thirty-second visible stalls during which the agent appears wedged. The budget is bounded per-attempt rather than per-session, and that bound is enforced by the underlying twenty-second timeout, which means there is no need for a separate circuit breaker on the happy path: the call either completes within the budget, fails fast with a typed error the planner can react to, or runs out of time and surfaces the failure as a step error.
 
 ## Why not just one bigger model?
 
-I've tried this. It's still the obvious comparison every time someone asks. A few things kept biting me:
-
-- **Cost grows with screenshot resolution.** Sending higher-res images to the planner would help it click better, but image tokens scale fast and budgets blow up.
-- **You lose the soft-signal channel.** With two models, the grounder's *number of plausible candidates* is itself useful information. With one model, you just get a coordinate or no coordinate.
-- **Hard to swap.** When a better grounding model ships, I swap it in by changing one HTTP client. With the monolithic agent, every model upgrade is a full migration.
-- **Reasoning models are advancing fast at small scales.** Two years ago you needed a flagship to plan a 20-step task. Now sub-flagship reasoning models do it well. The trend is in the small-model favour.
+The single-multimodal architecture is the comparison every reader asks about, because the two-model split looks like additional complexity until the reasons not to take it become concrete. The reason that ended up mattering most for me is cost scaling: image tokens dominate every multimodal call, and sending higher-resolution screenshots to the planner so that it could click better would cause the per-session budget to grow much faster than the marginal accuracy gain justifies. The second reason is that two specialist models give you a soft-signal channel a single model cannot: the grounder's number of plausible candidates for a given target description is itself useful information, since two candidates that are visually far apart on the screen mean the description was ambiguous and the planner should be told to retry with more specificity, whereas a single multimodal model simply returns coordinates or refuses, with no analogous "by the way, this was a coin flip" channel. The third reason is operational rather than technical: when a better grounding model ships I can swap it in by changing one HTTP client, but with a monolithic agent every model upgrade is a full migration of prompts, evaluation harnesses, and downstream consumers. Finally, small reasoning models are improving at a pace that makes the bet structurally favourable, since a planning role that required a flagship two years ago is now well within reach of sub-flagship reasoning models, and the trend continues to favour the side of the architecture that splits the work into specialists.
 
 ## Where it falls down
 
-This isn't free. The costs I've found:
+The split is not free, and it is worth being honest about the costs. Operating two model providers means maintaining two sets of timeouts, retry policies, and cost dashboards, and every architecture that adds a second upstream also adds a second class of outage to monitor. Right-tail latency is materially worse than the single-call alternative, because two sequential roundtrips mean the step's wall-clock time is dominated by whichever of the two upstreams is slower at the ninety-ninth percentile; the average call is faster than a flagship multimodal call but the worst-case call is reliably slower. The third cost is that the entire architecture's reliability depends on the planner writing specific noun phrases, since "click the button" is hopeless and only descriptions like "the green Submit button at the bottom of the order form" reliably localise, which makes prompt engineering a more load-bearing concern here than it would be in a single-model setup.
 
-- **Two model providers.** You need an LLM endpoint and a grounding endpoint, with two sets of timeouts, retries, and cost dashboards.
-- **Latency in the right tail.** Two sequential calls per step means you eat the slower one's tail-latency. A planner-and-grounder roundtrip is faster than a flagship multimodal call on average but worse in the p99 case.
-- **Description fragility.** The planner's clicks are only as good as its noun phrases. "Click the button" is hopeless. "Click the green Submit button at the bottom of the form" works. Prompting matters more here than in a single-model setup, and the planner has to learn to be specific.
-
-Worth the trade for me.
+Even with those costs accounted for, the trade has been worth taking on every task I have measured.
 
 ## Closing
 
-The pattern feels like it's going to generalise. Whenever you have a problem that decomposes cleanly into "what should we do" and "where exactly", and the "where" is a perception task with clear inputs/outputs, splitting the model in two seems to win on cost AND reliability.
+The pattern seems likely to generalise outside computer-use to any agent task that decomposes cleanly into a "what should we do" question and a separate "where exactly does that happen" perception task, because perception tasks with clear inputs and outputs are exactly the workloads where a small dedicated specialist beats a generalist running the same model weights on a wider job description. The same shape applies to a planner that talks to a separate retriever, a separate code executor, or a separate graph-walker, and the unifying principle in every case is that single-task models at the leaves are smaller, faster, and more accurate at their specific task than a generalist trying to play every role in one forward pass.
 
-Same shape applies beyond computer-use: a planner that talks to a separate retriever, a separate code executor, a separate graph-walker. The unifying principle is that single-task models at the leaves are smaller, faster, and more accurate than one generalist trying to do everything in one forward pass.
-
-The flagship-everything era will end the day enough sub-tasks have a good open small model. Most of the way there already.
+The flagship-everything era of agent design will end the day enough sub-tasks have a good open small model that beats the generalist on the specific axis the sub-task cares about, and we are most of the way there already for the perception side of computer-use, with the planning and verification sides catching up next.

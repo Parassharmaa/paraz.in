@@ -1,0 +1,31 @@
+direction: right
+
+planner: "Planner emits" {
+  shape: rectangle
+  body: |||md
+  ```json
+  { action: "click",
+    target: "Sign In",
+    verify: "email + password
+             form is now visible" }
+  ```
+  |||
+}
+
+sandbox: "Sandbox dispatches click\n(captures screenshot)" {
+  shape: rectangle
+}
+
+verifier: "Verifier query" {
+  shape: rectangle
+  body: "Does this screenshot show:\n'an email + password form'?"
+  style.fill: "#fff7e0"
+}
+
+result: "yes / no / uncertain" {
+  shape: hexagon
+}
+
+planner -> sandbox: ""
+sandbox -> verifier: ""
+verifier -> result: ""
