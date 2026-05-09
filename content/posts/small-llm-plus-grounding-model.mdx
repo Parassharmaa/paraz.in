@@ -146,7 +146,7 @@ The combined effect is that the agent stays coherent across long sessions even t
 
 ## Verification: closing the loop
 
-Every action the planner takes is a hypothesis. After the action lands, the grounder is also a verifier:
+Every action the planner takes is a hypothesis. After the action lands, a verifier checks whether the hypothesis held:
 
 ```
 planner: { action: "click", target: "Sign In",
@@ -154,14 +154,79 @@ planner: { action: "click", target: "Sign In",
    ↓
 sandbox: dispatches click, captures screenshot
    ↓
-grounder: query("does this screenshot show: an email + password form?")
+verifier: query("does this screenshot show: an email + password form?")
    ↓
-result: yes / no / ambiguous → recorded on the step
+result: yes / no / uncertain → recorded on the step
 ```
 
 When verification fails, the planner sees it in the next step's history and can recover. When it succeeds, you have a much stronger "this step actually worked" signal than just "the action didn't throw an exception".
 
-A second verification fires on `done`. Before declaring victory, ask the grounder: did the agent actually complete the original prompt? It's a 500ms call and it catches the silent-regression failure mode where the planner thinks it's done but the page is wrong (auth wall, error toast, half-loaded state). The done-step still terminates as done — but the verify result lands on the step record so the user can see "soft uncertain" successes flagged visually.
+A second verification fires on `done`. Before declaring victory, ask the verifier: did the agent actually complete the original prompt? It's a 500ms call and it catches the silent-regression failure mode where the planner thinks it's done but the page is wrong (auth wall, error toast, half-loaded state). The done-step still terminates as done, but the verify result lands on the step record so the user can see "soft uncertain" successes flagged visually.
+
+## Update: who verifies the verifier
+
+Initial version of this used the same Moondream grounding model as the verifier. The natural pick: same upstream, same outbound budget, same retry policy. It worked on smoke-test pages.
+
+It started failing on dense ones. Specifically: forms with multiple buttons in a row, results pages with similar-looking cards, settings panels with nested toggles. The verifier would say "no, the goal isn't met" on a screenshot where the goal *was* met. False negatives, not false positives — and that's the worse direction. A false-negative verifier triggers a replan that the planner then has to talk itself out of, which costs steps, which costs grounder calls, which costs money and wall-clock.
+
+The fix that worked: swap the verifier to the same small reasoning model the planner uses, and leave the grounder on the dedicated point-to-pixel model. Three roles instead of two:
+
+```
+                     ┌────────────────────┐
+                     │  Reasoning LLM     │
+       screenshot →  │  (plans next step) │ → { action, target,
+                     │                    │     verify, … }
+                     └─────────┬──────────┘
+                               │ "click the blue Sign In button"
+                               ▼
+                     ┌────────────────────┐
+                     │  Grounding model   │ → (x, y) ∈ [0, 1]²
+                     │  (point-to-pixel)  │
+                     └─────────┬──────────┘
+                               │
+                               ▼
+                     ┌────────────────────┐
+                     │   Sandbox VM       │ → new screenshot
+                     │   xdotool dispatch │
+                     └─────────┬──────────┘
+                               │
+                               ▼
+                     ┌────────────────────┐
+                     │  Reasoning LLM     │ → yes / no / uncertain
+                     │  (verifier role)   │
+                     └─────────┬──────────┘
+                               │
+                               └─── back to plan with verify-result tag
+```
+
+Why the reasoning model is a better verifier than the grounding model:
+
+- **The verifier question is reasoning, not pointing.** "Does this screenshot show the article body, with no overlay covering the text?" needs scene understanding, not pixel localisation. Point-pose models are dedicated to the latter; they're undertrained on the former. Generalist multimodals — even small ones — beat them on this exact axis.
+- **The cost of a wrong NO is asymmetric.** A false-positive verifier (says yes when goal isn't met) wastes one step on a `done` that should have been a retry. A false-negative verifier (says no when goal IS met) triggers a replan, which is one more planner call, one more grounder call, one more sandbox action, plus another verifier round. Roughly 4× the cost of a wrong-yes, and worse for the user because the agent visibly hesitates on a page they can see is correct. Once I had numbers on the asymmetry it became hard to justify the cheaper-but-noisier verifier.
+- **You still don't pay flagship prices for it.** The verifier is the same small reasoning model that already plans, just called with a different prompt. Sub-flagship pricing, same image-token cost as the planner call would be anyway.
+
+The grounder stayed on the dedicated point-pose model. That's the right specialist for "where". The reasoning model owns "what" and "did it work" — both reasoning roles, both well within the small model's wheelhouse.
+
+This generalises the original split: not "plan + ground" but "**plan + ground + verify**", where the planner and verifier happen to be the same model played in different roles, and the grounder is its own thing.
+
+## Two more grounding upgrades that landed
+
+Once the verifier moved to the reasoning model, two improvements to the grounder itself fell out:
+
+**Iterative-refine grounding.** When the grounder returns multiple plausible candidates (the target description matched several visually distinct elements), crop a ~30%-of-axis window centered at the first guess and re-point inside the crop. The target now occupies many more pixels of the input image, which is exactly when small point-pose models do their best work. Coordinates map back to the original frame. This pattern shows up in a few research papers under names like "OS-Atlas" and "OmniParser-V2" — they all converge on the same crop-and-re-point loop. I don't think anyone has the optimal version yet, but the floor is much higher than no refinement at all. The instrumented counter tracks four outcomes: `improved` (refinement shifted the target ≥5% on one axis), `confirmed` (refinement agrees with the first guess), `skipped` (no ambiguity, refinement not run), `failed` (refinement returned nothing usable).
+
+**Verifier-driven replan nudge.** When the verifier says "no" on a click or type, the next planner turn gets an explicit "retry with a different target" instruction in its prompt. Bounded by a small per-session cap (3 in practice) so a genuinely broken page doesn't trap the loop. The cap matters: without it, a stuck verifier produces an infinite agreed-on-wrong loop. With it, the planner gets one to three real chances to find a different path before it falls back to declaring `done` with a soft-uncertain flag.
+
+Both of these were available the moment the verifier got reliable. With a noisy verifier the cap-three replan would have been three guaranteed-wasted retries on every borderline page; with the better verifier it's a real second-chance signal.
+
+## What this updates in the original story
+
+The two-model post above still holds: **single-task models at the leaves beat one generalist trying to do everything**. The update is that "leaves" is plural in two interesting ways:
+
+- **More than one specialist per task type.** The grounder is one specialist. The refinement-crop pass is the *same* specialist, called twice with different inputs. Same model, different input shape, materially better outcomes.
+- **The same generalist plays multiple roles.** Plan and verify are different prompts on the same small reasoning model. The split that matters isn't "different models per role" — it's "different *prompts* per role, with different evaluation criteria". The verifier prompt has a strict {yes, no, uncertain} schema; the planner prompt has the action vocabulary. Same upstream, very different responsibilities.
+
+The principle to take away isn't "two models". It's: **decompose the agent into roles, assign each role to whatever model wins on that role's specific axis, and let the orchestration code wire the prompts and outputs**. For computer-use today that means: small reasoning model for plan + verify, dedicated point-pose model for ground (with refine), one flagship-free flow.
 
 ## Reliability: retry every transient
 
