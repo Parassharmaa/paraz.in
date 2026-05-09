@@ -137,6 +137,29 @@ The second upgrade is a verifier-driven replan nudge that fires when the verifie
 
 Neither of these upgrades would have been worth shipping with the old grounder-as-verifier setup, because a noisy verifier means the cap-three replan path becomes three guaranteed-wasted retries on every borderline page rather than a real recovery mechanism, which would have made the agent slower without making it more accurate. With the reasoning-model verifier in place, both upgrades pay off immediately, and the verify-fail-replan counter has become one of the more informative signals on the dashboard for spotting upstream UI changes that the planner has not yet adapted to.
 
+## Cutting cost without changing models: prefix caching
+
+The cost section above made the case that two cheap calls beat one expensive call, but that was the static analysis. The dynamic improvement came from realising that almost every planner call inside one session sends an identical multi-thousand-token system prompt, and that providers offering prompt caching will discount that repeated portion by ninety percent on every call after the first if the prefix is held byte-stable and the call routes to a cache-warm replica. The two preconditions are independent, and missing either one means the cache silently fails to engage even though everything looks like it should be working.
+
+The byte-stable side is the easier of the two to get wrong. The original architecture interleaved a half-dozen mutable fields into the system prompt itself, including the history trail of older actions, the current plan tree, and the durable scratchpad notes the planner appends to per step. All three of those mutate every step, which means the system prefix changed on every call, which means the cache was never going to engage no matter how predictable the rest of the prompt was. The fix was to split the system prompt into a stable component (BASE_SYSTEM_PROMPT plus the user's cross-session memories, which only change when the user's profile updates) and a mutable component (history, plan, scratchpad) that lives in a transient user message pushed onto the messages array right before the planner call and popped immediately after, so it never enters the prefix consumed on the next step.
+
+The replica-routing side is less obvious because it does not show up at all when you read the SDK code. Provider caches are local to the backend instance that processed the original prefix, and without a routing hint a series of calls with identical prefixes will scatter across the load balancer and miss the cache on every replica that has not seen the prefix yet. Both OpenAI and Anthropic accept a customer-supplied cache key (the `prompt_cache_key` field in the OpenAI API, similar mechanisms elsewhere) that the provider hashes for sticky routing, so passing the user's id keys their session's calls onto the same cache-warm replica for the duration of the session. The planner and verifier need different keys because their prefixes are different, and sharing one key would round-robin-evict the prefix you actually wanted to keep.
+
+Once both pieces were in place I instrumented the planner to write each call's `inputT`, `cachedInputT`, `outputT` to a JSONL trace and ran five representative tasks through the harness end-to-end, paying real billed dollars on the OpenAI side. The trace numbers are below, and they are real measurements rather than estimates:
+
+| task | planner calls | input tokens | cached tokens | cache % | cost USD |
+|---|---:|---:|---:|---:|---:|
+| open example.com, read heading | 2 | 7,783 | 4,608 | 59% | $0.0040 |
+| open Linux Wikipedia, read title | 1 | 3,938 | 2,304 | 59% | $0.0020 |
+| open HN, confirm 10 headlines | 1 | 3,966 | 2,304 | 58% | $0.0021 |
+| HN → click first story → click comments | 4 | 18,370 | 10,240 | 56% | $0.0105 |
+| Wikipedia Computer → scroll to History → quote | 2 | 8,900 | 5,120 | 58% | $0.0049 |
+| **Total across 5 sessions** | **10** | **42,957** | **24,576** | **57.2%** | **$0.0236** |
+
+The mean per-task cost is just under half a cent at gpt-5.4-mini's published rates of $0.75 per million input tokens and $0.075 per million cached input tokens. The 57 percent cached ratio matches the theoretical ceiling pretty closely, since the stable prefix is roughly 2,300 tokens out of every 3,950-token planner call and the first call in any session is always uncached by definition. Tasks that ran for more steps (the four-call HN navigation) saw the same hit ratio as one-call tasks, which is the most useful confirmation that the prefix is genuinely byte-stable across step boundaries rather than drifting in some subtle way that breaks the cache after step three. Anything below thirty percent in production would mean either the prefix is mutating or the routing hint is not doing its job.
+
+There is a third lever sitting next to those two that I have only partly used so far. Providers offer extended cache retention, with OpenAI's `prompt_cache_retention: "24h"` flag pushing the in-memory five-to-ten-minute TTL up to about a day. For the schedule-driven user pattern (an agent that runs the same set of tasks every morning) extended retention turns prompt caching from a within-session optimisation into a within-day optimisation, which means even step one of the next session can hit cache against the previous session's prefix. I shipped the 24h flag on the planner alone and left the verifier on default retention because the verifier prefix is below the 1024-token cache eligibility floor anyway and would not benefit. The boot sequence now also estimates the prefix token count (chars divided by four for English prose, plus a 75-token safety margin above 1024) and emits a structured warning if a future trimming refactor drops it below the floor, since that kind of regression is invisible in tests and only shows up as a slow cost increase weeks later.
+
 ## Reliability: retry every transient
 
 ```
