@@ -1,0 +1,28 @@
+direction: right
+
+e0: "E0 smoke" {
+  shape: rectangle
+  body: "Qwen2.5 0.5B\nheld-out worker accuracy\n30.8%"
+  style.fill: "#fff1df"
+}
+
+v0: "v0" {
+  shape: rectangle
+  body: "Qwen2.5 0.5B\nheld-out worker accuracy\n53.9%"
+  style.fill: "#e8f1ff"
+}
+
+v1: "v1" {
+  shape: rectangle
+  body: "Qwen3 0.6B\nheld-out worker accuracy\n69.2%\nworkflow accuracy 76.9%"
+  style.fill: "#e8fff1"
+}
+
+gap: "Still tiny" {
+  shape: rectangle
+  body: "13 held-out rows is a sanity signal,\nnot a benchmark claim."
+}
+
+e0 -> v0: "better target format"
+v0 -> v1: "new base + GPU run"
+v1 -> gap

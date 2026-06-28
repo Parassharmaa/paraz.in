@@ -1,0 +1,49 @@
+direction: right
+
+idea: "Question" {
+  shape: rectangle
+  body: "Can a tiny router learn which larger model should handle a task?"
+}
+
+runs: "Measured worker runs" {
+  shape: rectangle
+  body: "Run the same benchmark rows through available workers\nRecord pass/fail, workflow, latency, and route labels"
+}
+
+rows: "Routing dataset" {
+  shape: cylinder
+  body: "53 train rows\n13 held-out rows\nsoft worker targets"
+}
+
+router: "Qwen3 0.6B router" {
+  shape: rectangle
+  body: "Frozen backbone\nsmall logits heads\nworker + workflow + verifier + abstain"
+  style.fill: "#e8f1ff"
+}
+
+mask: "Runtime policy" {
+  shape: rectangle
+  body: "mute unavailable workers\nprefer allowed providers\nsoftmax over active routes"
+}
+
+worker: "Worker model" {
+  shape: rectangle
+  body: "Qwen Coder, GLM, Kimi,\nDeepSeek, local Ollama, future models"
+  style.fill: "#e8fff1"
+}
+
+learn: "Next learning loop" {
+  shape: rectangle
+  body: "expand labels\nrefresh heads\ncollect harder traces\nrepeat"
+  style.fill: "#fff8dc"
+}
+
+idea -> runs
+runs -> rows
+rows -> router
+router -> mask
+mask -> worker
+worker -> learn: "outcomes"
+learn -> rows: "new rows" {
+  style.stroke-dash: 4
+}

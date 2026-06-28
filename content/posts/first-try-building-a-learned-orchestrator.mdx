@@ -1,0 +1,167 @@
+---
+title: "My First Try at Building a Learned Model Orchestrator"
+description: "A small narrative write-up of the first mempool experiment: training a tiny Qwen3 router to choose between larger worker models, publishing the first dataset/model artifacts, and writing down what still feels brittle."
+date: 2026-06-28
+published: true
+tags: ["AI", "agents", "orchestration", "small models", "research"]
+author: "Paras Sharma"
+---
+
+For a while I have had this feeling that the next useful AI system will not be one giant model that does everything. It will be a small, fast coordinator sitting in front of many stronger models, tools, workflows, and memories.
+
+The coordinator should not be a pile of if-statements. It should learn.
+
+That is the idea behind `mempool`: a tiny trainable orchestrator that looks at a task, predicts which worker model or workflow should handle it, and can be refreshed often as the model pool, user habits, and evidence change. The first version is not grand. It is a small experiment with a small dataset. But it is now real enough to point at: there is a dataset, a trained router head, a model card, a benchmark harness, and a roadmap for making the label space dynamic.
+
+This post is a first field note from building it.
+
+## The shape of the system
+
+The core bet is simple:
+
+> use a small model as the routing brain, and reserve the expensive models for the work they are actually best at.
+
+In the current prototype, the orchestrator is built on top of `Qwen/Qwen3-0.6B`. The base model acts as the text encoder. On top of it, I train lightweight heads that predict:
+
+- the worker model to call
+- the workflow mode to use
+- whether a verifier should be used
+- whether the router should abstain
+
+The checkpoint stores only the small routing heads. The base model is loaded separately. That matters because the router can stay cheap and easy to retrain while the workers can be anything: local Ollama models, cloud-hosted coding models, larger reasoning models, or future models that are not in the pool yet.
+
+<img src="/diagrams/mempool-orchestrator-architecture.svg" alt="mempool orchestrator architecture diagram showing the measured training loop, Qwen3 router backbone, lightweight heads, worker registry, logit mask, and worker execution path." className="mx-auto my-8 rounded border border-zinc-200" />
+
+The important distinction is that the orchestrator is not trying to answer the user directly. It is trying to answer a smaller question:
+
+> which route is likely to produce the best result for this task, under the current model pool and constraints?
+
+That question is easier, cheaper, and much more measurable than open-ended generation.
+
+## What I built first
+
+The first loop was deliberately practical:
+
+1. Pick a benchmark slice.
+2. Run the same tasks through a small pool of candidate workers.
+3. Record which worker succeeded, failed, or looked strongest.
+4. Turn those measurements into routing rows.
+5. Train a small router to predict the route from the task text.
+6. Hold out a small split and check whether the router learned anything at all.
+
+That produced the first public dataset:
+
+[mempool-qwen-logits-orchestrator-rows](https://huggingface.co/datasets/blazeofchi/mempool-qwen-logits-orchestrator-rows)
+
+And the first public Qwen3 router artifact:
+
+[mempool-qwen3-0p6b-logits-orchestrator-v1](https://huggingface.co/blazeofchi/mempool-qwen3-0p6b-logits-orchestrator-v1)
+
+The code lives here:
+
+[github.com/Parassharmaa/mempool](https://github.com/Parassharmaa/mempool)
+
+## The first signal
+
+The dataset is tiny: **53 training rows** and **13 held-out rows**. That is not enough to claim a general result. It is enough to test whether the harness, labels, model loading, training, and publishing loop are wired correctly.
+
+The first useful result came from comparing three steps:
+
+<img src="/diagrams/mempool-results.svg" alt="First mempool result progression: E0 smoke reached 30.8 percent held-out worker accuracy, v0 reached 53.9 percent, and v1 with Qwen3 0.6B reached 69.2 percent worker accuracy and 76.9 percent workflow accuracy on the tiny held-out split." className="mx-auto my-8" />
+
+| Run | Base | Held-out worker accuracy | Held-out workflow accuracy |
+|---|---:|---:|---:|
+| E0 smoke | Qwen2.5 0.5B | 30.8% | not the focus |
+| v0 | Qwen2.5 0.5B | 53.9% | tracked |
+| v1 | Qwen3 0.6B | 69.2% | 76.9% |
+
+The v1 run trained on a Lightning L40S GPU for 40 epochs. Final training loss was `2.4742`. Train worker accuracy was `81.1%`; held-out worker accuracy was `69.2%`.
+
+Again: small split, early signal. But it crossed the threshold I cared about for a first attempt. The system can measure worker outcomes, turn them into rows, train a router head, reload it, and produce a plausible route.
+
+One sample route from the v1 artifact picked a cloud coding worker, selected direct execution, and emitted verifier and abstain probabilities. That is the right shape of output. The route is not just "model X"; it is a bundle of execution policy.
+
+## Why not just use benchmark leaderboards?
+
+This was the first uncomfortable design question.
+
+If benchmark results already exist, why collect our own rows?
+
+Leaderboards are useful for choosing candidate workers, but they are not enough for a router. A router needs per-task, per-worker signals in the exact regime it will operate in. It needs to know that one model is stronger on a compact Python bug, another is better on a repo-wide edit, another is cheap enough for first-pass triage, and another should be muted because it is offline today.
+
+Aggregate benchmark scores flatten the thing the router needs most: conditional routing signal.
+
+So the dataset has to look more like a ledger:
+
+- task text
+- worker IDs
+- worker outcomes
+- latency and cost
+- workflow choice
+- verifier result
+- abstain signal
+- enough metadata to rerun or audit the row later
+
+That is more annoying than downloading a leaderboard. It is also the part that makes the project interesting.
+
+## The brittle part: fixed labels
+
+The first version hard-codes worker labels. That is fine for a tiny experiment, but it is wrong for the product shape.
+
+Real systems have changing model pools. A local model may be unavailable. A cloud provider may be too expensive for a task. A new model may arrive. A user may want to mute one worker entirely. If the router has a fixed label head and blindly predicts one of those labels, it will be stale almost immediately.
+
+The next architecture needs a dynamic worker registry:
+
+<img src="/diagrams/mempool-first-run.svg" alt="mempool first run diagram showing benchmark rows flowing into a routing dataset, Qwen3 router, runtime policy mask, worker execution, and a feedback loop for new outcomes." className="mx-auto my-8" />
+
+The plan is:
+
+- use canonical worker IDs instead of provider-shaped labels
+- maintain a runtime registry with provider bindings and capability metadata
+- apply logit masks so unavailable or disallowed workers cannot be selected
+- support expandable heads, where old label weights are copied forward and new labels are initialized
+- eventually score task embeddings against worker metadata, so the router can generalize better to new workers
+
+This is where the project starts to feel like a living system instead of a classifier demo.
+
+## What still feels unsolved
+
+The biggest gap is data.
+
+The current dataset proves the loop, not the model. To train a genuinely useful orchestrator, the dataset needs diversity: coding tasks, terminal tasks, planning tasks, reasoning tasks, cheap triage tasks, and multi-step agent traces. It also needs repeated samples, because single-run success can be noisy. A worker might pass once and fail on a retry. The router should learn expected utility, not a single lucky outcome.
+
+I also want turn-level routing later. Today the router predicts a route for a task. But agentic work is not one decision. It is a sequence of decisions:
+
+- which model should plan this turn?
+- which model should edit?
+- which verifier should check?
+- when should the system escalate?
+- when should it stop spending?
+
+That is a harder dataset. I am keeping it on the roadmap, but I do not want to mix it into v1 before the task-level loop is solid.
+
+## What I like about this direction
+
+The nice thing about a small orchestrator is that it can be alive.
+
+If the router is small enough, it can be retrained frequently. Maybe daily. Maybe hourly for some deployments. New traces come in, weak labels are refined, dead workers get masked, new workers get added, and the router slowly absorbs experience that would otherwise sit outside the model as logs or retrieval context.
+
+That is the part I keep coming back to: memory should not only be retrieved. Some of it should become capability.
+
+External memory is still useful. But if the system repeatedly learns that one route works better for one class of task, that should eventually become a weight update, an adapter, or a small head refresh. The orchestrator becomes a compressed memory of operational experience.
+
+## Current status
+
+The first public version is now in this state:
+
+- GitHub repo: [mempool](https://github.com/Parassharmaa/mempool)
+- dataset: [mempool-qwen-logits-orchestrator-rows](https://huggingface.co/datasets/blazeofchi/mempool-qwen-logits-orchestrator-rows)
+- latest model artifact: [mempool-qwen3-0p6b-logits-orchestrator-v1](https://huggingface.co/blazeofchi/mempool-qwen3-0p6b-logits-orchestrator-v1)
+- base model: `Qwen/Qwen3-0.6B`
+- current measured split: 53 train rows, 13 held-out rows
+- held-out worker accuracy: `69.2%`
+- held-out workflow accuracy: `76.9%`
+
+The next version should not just be "same thing, more rows." It should make the label space more flexible, add runtime masking, and expand the dataset with enough per-worker evidence that the router can become useful rather than merely functional.
+
+This first try is small. But it has the shape I wanted: a cheap learned coordinator, a measured worker pool, and a path toward an orchestrator that can keep adapting as the rest of the system changes.
