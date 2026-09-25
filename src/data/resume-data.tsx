@@ -152,6 +152,13 @@ export const RESUME_DATA = {
   ],
   projects: [
     {
+      title: "System One Eval",
+      techStack: ["AI Evals", "Structured Decisions", "Hugging Face"],
+      description:
+        "An open test of whether AI models can follow rules, read evidence, and make reliable choices before software acts.",
+      link: { href: "https://huggingface.co/datasets/blazeofchi/system-one-eval" },
+    },
+    {
       title: "Turtle",
       techStack: ["VLM", "CNC", "Android", "Mobile Use Agent"],
       description:
