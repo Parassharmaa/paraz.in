@@ -7,7 +7,7 @@ export const RESUME_DATA = {
   locationLink: null,
   about: "Read, Write, Execute",
   summary:
-    "Software engineer and AI researcher with 6+ years of experience across full-stack development, AI/ML, and data science. Published research in Graph Neural Networks, speech recognition, and neural ODEs. At Autify, works on AI-powered Quality Assurance platforms with LLM-based test generation and cross-platform desktop applications. Previously developed impactful AI solutions including early autism detection and personalized therapy systems.",
+    "Software engineer and technical lead with 7+ years of experience, working at the intersection of applied AI and product development. Builds agent systems, experiments with audio models, and brings task-specific models into local applications. At Autify, leads technical work on Genesis, an AI-driven quality engineering platform. Previously co-founded Kidaura, building developmental screening and personalized intervention tools.",
   avatarUrl: "paraz.png",
   personalWebsiteUrl: "https://paraz.in",
   contact: {
@@ -157,6 +157,20 @@ export const RESUME_DATA = {
       description:
         "An open test of whether AI models can follow rules, read evidence, and make reliable choices before software acts.",
       link: { href: "https://huggingface.co/datasets/blazeofchi/system-one-eval" },
+    },
+    {
+      title: "Aural One",
+      techStack: ["Native Audio", "Model Training", "Python", "Evaluation"],
+      description:
+        "An early research model that turns audio and written context into structured decisions. Adapts Gemma 4 E2B's audio components, with public weights, training code, and speaker-held-out evaluations. Results and known limitations are documented alongside the release.",
+      link: { href: "https://github.com/Parassharmaa/aural-one" },
+    },
+    {
+      title: "Mimi",
+      techStack: ["Swift", "MLX", "Speech", "Local Translation", "macOS"],
+      description:
+        "A local English-Japanese transcription and translation app for macOS. Includes continued training and evaluation of compact translation models, with public weights and benchmarks. The latest model remains a development candidate while long-text repetition is addressed.",
+      link: { href: "https://github.com/Parassharmaa/mimi" },
     },
     {
       title: "Turtle",
