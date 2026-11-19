@@ -1,0 +1,95 @@
+---
+title: "OpenAI DevDay Exchange Tokyo 2026"
+description: "My notes from the Tokyo event on Codex, apps in ChatGPT, voice actions, and talks by Sakana AI and GenerativeX."
+date: 2026-10-20
+published: true
+author: "Paras Sharma"
+---
+
+I attended OpenAI DevDay Exchange in Tokyo on October 20, 2026. The talks used English and Japanese, and we used radio receivers for live interpretation. [Event page](https://events.openai.com/devdayexchange2026?lang=en).
+
+<figure>
+  <a href="/images/devday-exchange-tokyo-2026/event-stage.webp">
+    <img src="/images/devday-exchange-tokyo-2026/event-stage.webp" width={1650} height={834} alt="The OpenAI DevDay Exchange logo on the stage in Tokyo." loading="lazy" />
+  </a>
+</figure>
+
+The first session reviewed the announcements from DevDay. These included Dots, the Agents API, Spaces, Codex Cloud, and the Decisions API. The later sessions showed how some of these tools work together. [OpenAI DevDay recap](https://openai.com/index/devday-2026-recap/).
+
+## Codex and teams of agents
+
+The Codex session described how models continue work toward a goal. The speakers discussed reinforcement learning and showed how prompts and an `AGENTS.md` file can give an agent a clear goal and rules.
+
+<figure>
+  <a href="/images/devday-exchange-tokyo-2026/codex-manager.webp">
+    <img src="/images/devday-exchange-tokyo-2026/codex-manager.webp" width={1650} height={993} alt="A presenter stands beside a slide that shows a manager agent and three tasks." loading="lazy" />
+  </a>
+</figure>
+
+One example used a manager agent to assign tasks and receive results. Another example used a team of agents that exchanged messages as they worked on one problem.
+
+<figure>
+  <a href="/images/devday-exchange-tokyo-2026/agent-team.webp">
+    <img src="/images/devday-exchange-tokyo-2026/agent-team.webp" width={1650} height={1031} alt="A presenter stands beside a diagram of agent roles and tasks." loading="lazy" />
+  </a>
+</figure>
+
+I used a shared Markdown board for a similar purpose in my [Playwright study](/posts/message-board-agents). On a laptop, several agents can compete for the same compute resources. Cloud sandboxes can give them separate environments. I also want to measure whether the extra agents improve the result enough to justify the extra token use.
+
+## Apps in ChatGPT
+
+MagicPath showed an app interface inside ChatGPT. The demo showed the chat and the app side by side. During the session, I sent a screenshot to my Dot. It opened a pull request for a first prototype before the demo ended.
+
+<figure>
+  <a href="/images/devday-exchange-tokyo-2026/magicpath-demo.webp">
+    <img src="/images/devday-exchange-tokyo-2026/magicpath-demo.webp" width={1650} height={1014} alt="The MagicPath demo shows a chat beside a page design." loading="lazy" />
+  </a>
+</figure>
+
+The developer sessions also covered ChatGPT Sites, WebMCP, and Sign in with ChatGPT. The Model Context Protocol lets an app make its tools available to ChatGPT. ChatGPT can display the app interface beside the chat. [OpenAI DevDay recap](https://openai.com/index/devday-2026-recap/).
+
+## Voice and app actions
+
+One demo used two voice agents with different personalities in one session. The agents spoke to each other.
+
+<figure>
+  <a href="/images/devday-exchange-tokyo-2026/voice-agents.webp">
+    <img src="/images/devday-exchange-tokyo-2026/voice-agents.webp" width={1650} height={1067} alt="The voice demo shows a conversation between two agents." loading="lazy" />
+  </a>
+</figure>
+
+A second demo connected GPT-Live to the Decisions API. The voice model handled the conversation. The Decisions API selected an action, and the app carried it out.
+
+<figure>
+  <a href="/images/devday-exchange-tokyo-2026/voice-actions.webp">
+    <img src="/images/devday-exchange-tokyo-2026/voice-actions.webp" width={1650} height={1088} alt="The demo slide connects GPT-Live, the Decisions API, and an app action." loading="lazy" />
+  </a>
+</figure>
+
+## Sakana AI and GenerativeX
+
+Sakana AI presented Namazu, a language model it adapted for Japanese and Japanese business tasks. The team discussed how it evaluated bias and behavior on sensitive topics. [Sakana Namazu](https://sakana.ai/namazu-api/).
+
+<figure>
+  <a href="/images/devday-exchange-tokyo-2026/sakana-namazu.webp">
+    <img src="/images/devday-exchange-tokyo-2026/sakana-namazu.webp" width={1650} height={972} alt="A Sakana AI slide shows evaluation results for Namazu." loading="lazy" />
+  </a>
+</figure>
+
+Sakana AI also presented work on recursive self-improvement and the AI Scientist. The AI Scientist uses agents to propose ideas, run experiments, and write reports. [AI Scientist paper and project notes](https://sakana.ai/ai-scientist-nature/).
+
+<figure>
+  <a href="/images/devday-exchange-tokyo-2026/ai-scientist.webp">
+    <img src="/images/devday-exchange-tokyo-2026/ai-scientist.webp" width={1650} height={963} alt="A Sakana AI slide shows the steps of an AI Scientist experiment." loading="lazy" />
+  </a>
+</figure>
+
+GenerativeX described its work to reduce the time between a security advisory and a patch. The team used Next.js advisories as an example. An advisory can appear outside business hours in Japan, so the team uses automation to help prepare fixes.
+
+<figure>
+  <a href="/images/devday-exchange-tokyo-2026/patch-timeline.webp">
+    <img src="/images/devday-exchange-tokyo-2026/patch-timeline.webp" width={1650} height={1025} alt="A GenerativeX slide shows the time of several Next.js security advisories." loading="lazy" />
+  </a>
+</figure>
+
+After the sessions, I spoke with developers, researchers, and founders about how they use agents in their own work.
