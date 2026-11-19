@@ -11,7 +11,7 @@ Two Playwright tests were green. Inside them, ten clicks had failed.
 Each click had waited about 30 seconds for a button that would never appear. A helper caught the errors and carried on, so our test summary showed two passes. I found this while trying to make our end-to-end suite run in under a minute. We never hit that target. But the way we found those clicks changed how I use AI agents for research.
 
 <figure>
-  <img src="/images/message-board-agents/the-question.webp" alt="Ink illustration of a figure examining a large question mark on a workbench." loading="lazy" />
+  <img src="/images/message-board-agents/the-question.webp" width={1600} height={900} alt="Ink illustration of a figure examining a large question mark on a workbench." loading="lazy" />
 </figure>
 
 ## The question behind the talk
@@ -21,13 +21,13 @@ In September I looked at a suite of 538 Playwright tests split across seven GitH
 One thing I like about working with agents is that I can hold a question at that level and still follow it down into the machinery. One minute is a pipeline question. It led us to browser processes, worker startup, retry scheduling, and eventually the accessible name of a single button.
 
 <figure>
-  <img src="/images/message-board-agents/software-layers.webp" alt="A purple elevator connects floors in a hand-drawn building, illustrating movement between levels of abstraction." loading="lazy" />
+  <img src="/images/message-board-agents/software-layers.webp" width={1600} height={900} alt="A purple elevator connects floors in a hand-drawn building, illustrating movement between levels of abstraction." loading="lazy" />
 </figure>
 
 Over five days, the investigation covered 18 questions, more than 120 experiment runs, and more than 3,800 test executions, including repeats. The loop was straightforward. Ask a question, write down an explanation we can test, read the source or documentation, run the comparison, and use the result to pick the next question.
 
 <figure>
-  <img src="/images/message-board-agents/research-loop.webp" alt="Original talk diagram showing the loop from question to explanation, experiment, result, and the next question." loading="lazy" />
+  <img src="/images/message-board-agents/research-loop.webp" width={1280} height={720} alt="Original talk diagram showing the loop from question to explanation, experiment, result, and the next question." loading="lazy" />
 </figure>
 
 ## How the message board worked
@@ -37,7 +37,7 @@ I used two Markdown files. `goal.md` held the question, what would count as an i
 A source-reading agent could explain how a Playwright worker starts. A second agent could try sharing a browser across workers. A reviewer could look for a difference in the setup that made the comparison unfair. In practice, each agent wrote its own experiment files and one coordinator updated the shared board. I could review the evidence and change direction without chasing several chat histories.
 
 <figure>
-  <img src="/images/message-board-agents/board-roles.webp" alt="Original message board diagram linking a goal file with a shared board, a source reader, a prototype builder, a reviewer, and a coordinator." loading="lazy" />
+  <img src="/images/message-board-agents/board-roles.webp" width={1280} height={720} alt="Original message board diagram linking a goal file with a shared board, a source reader, a prototype builder, a reviewer, and a coordinator." loading="lazy" />
 </figure>
 
 A handoff only needed enough information for the next person or agent to make a decision. Here’s a condensed example based on the browser-sharing experiment.
@@ -53,7 +53,7 @@ Next: Look for time spent waiting inside passing tests.
 There was a cost to keeping the loop running. The research session’s usage snapshot recorded about 362 million processed tokens across 1,098 agent responses and 988 commands. About 97.8% of **input** tokens came from the cache. That is a record of how much context the session processed, and I ran it on a subscription, so I don’t have a per-run dollar figure. I used lighter models for much of the reading and repeated experimentation.
 
 <figure>
-  <img src="/images/message-board-agents/token-usage.webp" alt="Original session snapshot showing about 362 million processed tokens, 97.8 percent of input served from cache, and 1,098 agent responses." loading="lazy" />
+  <img src="/images/message-board-agents/token-usage.webp" width={1280} height={720} alt="Original session snapshot showing about 362 million processed tokens, 97.8 percent of input served from cache, and 1,098 agent responses." loading="lazy" />
 </figure>
 
 ## What Playwright let us change
@@ -61,13 +61,13 @@ There was a cost to keeping the loop running. The research session’s usage sna
 Playwright Test runs tests in worker processes, each ordinarily starting its own browser. Each test can still get a fresh browser context when workers connect to one shared browser server. On my Mac, sharing Chromium across six workers cut browser memory by about a third. Both test windows were about 41 seconds. [Playwright’s notes on workers](https://playwright.dev/docs/test-parallel) and [browser contexts](https://playwright.dev/docs/browser-contexts) explain the two isolation boundaries.
 
 <figure>
-  <img src="/images/message-board-agents/browser-sharing.webp" alt="Three workers connect to a shared browser server. In the six-worker measurement, browser memory fell from 2.82 to 1.87 GiB while test time stayed around 41 seconds." loading="lazy" />
+  <img src="/images/message-board-agents/browser-sharing.webp" width={1280} height={720} alt="Three workers connect to a shared browser server. In the six-worker measurement, browser memory fell from 2.82 to 1.87 GiB while test time stayed around 41 seconds." loading="lazy" />
 </figure>
 
 Several other ideas sped up one part of the system. Narrowing selector searches more than doubled the speed of a synthetic query over 10,000 elements, with little change on real tests. Reusing module lookups took worker startup from roughly one second to 0.6 seconds. Removing one browser call made fills about 14% faster in the sample, while clicks stayed flat. A retry change that woke on animation frames saved 3.5% on its small test set, below the 5% threshold we’d set. Those results kept sending us back to the same question. Where was the rest of the time going?
 
 <figure>
-  <img src="/images/message-board-agents/memory-versus-time.webp" alt="An ink figure holds a purple balloon while chained to a large hourglass." loading="lazy" />
+  <img src="/images/message-board-agents/memory-versus-time.webp" width={1600} height={900} alt="An ink figure holds a purple balloon while chained to a large hourglass." loading="lazy" />
 </figure>
 
 ## The clicks that disappeared into green tests
@@ -77,7 +77,7 @@ We added a small reporter using Playwright’s [step events](https://playwright.
 The two tests at the top of the list used a helper that matched buttons named **Close**. It also matched **Close all panels**. Closing the last panel removed the bulk-close control, and the helper kept trying to click buttons that had disappeared. Each attempt ran to its timeout. The empty catch handlers made those attempts invisible in the pass count.
 
 <figure>
-  <img src="/images/message-board-agents/missing-button.webp" alt="An ink figure waits by a closed door with an hourglass below the button." loading="lazy" />
+  <img src="/images/message-board-agents/missing-button.webp" width={1600} height={900} alt="An ink figure waits by a closed door with an hourglass below the button." loading="lazy" />
 </figure>
 
 The two-test diagnostic went from 375 to 74 seconds of summed test time with a scoped-close prototype. The final helper used the exact bulk-close control and asserted that no panels remained. We also fixed a separate menu interaction that could retry a click after the menu had disappeared.
@@ -85,7 +85,7 @@ The two-test diagnostic went from 375 to 74 seconds of summed test time with a s
 On a local shard of 76 tests, the two interaction fixes reduced the command time from **10:44 to 6:38** at two workers, a 38% drop. Adding the experimental Playwright internals changes to the fixes brought it back up to **7:22**. With the interaction fixes and four workers, it took **3:42** and used more memory. We ran each full configuration once with the same replay fixtures and matching final test outcomes. Retry counts varied, so I treated the timings as exploratory. They describe a local shard.
 
 <figure>
-  <img src="/images/message-board-agents/local-shard-results.webp" alt="Chart comparing runtime and peak memory for four local runs of the same 76 tests. At two workers the test fixes reduced time from 10 minutes 44 seconds to 6 minutes 38 seconds." loading="lazy" />
+  <img src="/images/message-board-agents/local-shard-results.webp" width={1600} height={697} alt="Chart comparing runtime and peak memory for four local runs of the same 76 tests. At two workers the test fixes reduced time from 10 minutes 44 seconds to 6 minutes 38 seconds." loading="lazy" />
 </figure>
 
 ## What more runners might buy
@@ -93,13 +93,13 @@ On a local shard of 76 tests, the two interaction fixes reduced the command time
 One agent picked up an idea I’d floated about running many smaller shards in Daytona sandboxes. We modeled the September baseline using recorded test durations and then-current list prices. The curve leveled off around 33 sandboxes, at about eight minutes including the existing build. Past that point, a test lasting about 76 seconds set the floor for the test phase.
 
 <figure>
-  <img src="/images/message-board-agents/daytona-projection.webp" alt="September model plotting time and compute cost against sandbox count. Modeled latency flattens at roughly 33 sandboxes while cost keeps rising." loading="lazy" />
+  <img src="/images/message-board-agents/daytona-projection.webp" width={1600} height={573} alt="September model plotting time and compute cost against sandbox count. Modeled latency flattens at roughly 33 sandboxes while cost keeps rising." loading="lazy" />
 </figure>
 
 That chart is a projection. It assumes well-balanced shards and leaves out application, database, network, and orchestration costs. More runners would send more work to the same app, which could move the queue somewhere else. In the model, the build alone already exceeded the original one-minute target.
 
 <figure>
-  <img src="/images/message-board-agents/measuring-capacity.webp" alt="An ink figure adjusts a small apparatus while standing on a scale." loading="lazy" />
+  <img src="/images/message-board-agents/measuring-capacity.webp" width={1600} height={900} alt="An ink figure adjusts a small apparatus while standing on a scale." loading="lazy" />
 </figure>
 
 ## Why I’d use the board again
@@ -107,14 +107,14 @@ That chart is a projection. It assumes well-balanced shards and leaves out appli
 The idea has a long history. [Hearsay-II](https://mas.cs.umass.edu/Documents/Erman_Hearsay80.pdf) used a blackboard that specialized speech-recognition components could read and update. In a more recent coding experiment, [Cursor reported](https://cursor.com/blog/scaling-agents) that agents coordinating through a flat shared file hit contention and that explicit planner and worker roles worked better for their workload. On the public [Hugging Face compression board](https://huggingface.co/buckets/agent-collaborations/hutter-prize-main-bucket), you can see agents claim experiments, hand them off, and submit results for review.
 
 <figure>
-  <img src="/images/message-board-agents/hutter-dashboard.webp" alt="September screenshot of the public Hutter Prize collaboration dashboard, with results and a shared message board side by side." loading="lazy" />
-  <img src="/images/message-board-agents/hutter-claims.webp" alt="Two public board posts showing one agent handing off a decoding experiment and another claiming an open verification task." loading="lazy" />
+  <img src="/images/message-board-agents/hutter-dashboard.webp" width={1600} height={663} alt="September screenshot of the public Hutter Prize collaboration dashboard, with results and a shared message board side by side." loading="lazy" />
+  <img src="/images/message-board-agents/hutter-claims.webp" width={1027} height={503} alt="Two public board posts showing one agent handing off a decoding experiment and another claiming an open verification task." loading="lazy" />
 </figure>
 
 On our board, a result that ruled out an idea was useful to the next agent. Browser sharing saved memory and sent us back to the clock. The clock sent us to step events. The step events sent us to a disappearing button. Each time we changed direction, the evidence went somewhere the next agent could find it.
 
 <figure>
-  <img src="/images/message-board-agents/shared-machinery.webp" alt="An ink figure operates a shared conveyor carrying a light bulb, envelope, and cup." loading="lazy" />
+  <img src="/images/message-board-agents/shared-machinery.webp" width={1600} height={900} alt="An ink figure operates a shared conveyor carrying a light bulb, envelope, and cup." loading="lazy" />
 </figure>
 
 If I did this again, I’d start with one question and write down what would change my mind. Then I’d give the agents a place to leave the answer.
