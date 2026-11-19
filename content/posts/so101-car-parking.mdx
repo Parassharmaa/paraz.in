@@ -1,0 +1,95 @@
+---
+title: "SO-101 car parking with imitation learning"
+description: "How we built a MuJoCo scene, collected 300 demonstrations, trained a robot policy, and measured where it failed."
+date: 2026-11-01
+published: true
+author: "Paras Sharma"
+---
+
+I built a MuJoCo task in which an SO-101 robot arm moves a toy car to a colored parking bay. We collected 300 scripted demonstrations and used them to train a policy. The selected policy put two cars partly into the correct bays in 20 development scenes. It did not complete a park.
+
+<figure>
+  <a href="/images/so101-car-parking/partial-placement.webp"><img src="/images/so101-car-parking/partial-placement.webp" width={960} height={832} alt="A simulated SO-101 arm and toy cars on a table with colored bays." loading="lazy" /></a>
+  <figcaption>A recorded partial placement from the selected policy.</figcaption>
+</figure>
+
+## The simulator and the task
+
+We started with one car and a straight push. An inverse kinematics controller moved the gripper behind the car. The fingers pushed the car through contact. The car had passive wheels and no motor.
+
+Then we added scenes with two to four cars and the same number of bays. A text instruction specified the action, the car color, and the bay color. The instruction can specify a different color for the bay. The requested action was either a push or a pick and place.
+
+The arm used a raised mount and flat pads on the gripper. These changes helped it reach the bays and grip the cars. We varied car positions and bay positions within a fixed layout scheme. The initial car headings, camera positions, and light did not change. The simulator used the SO-101 model from [MuJoCo Menagerie](https://github.com/google-deepmind/mujoco_menagerie).
+
+## How we collected the data
+
+A scripted teacher used the car and bay positions from MuJoCo. It converted waypoints into joint commands. The arm moved the cars through contact and grip forces.
+
+We accepted a demonstration when the correct car stopped upright and fully inside its bay. The car had to be on the table and free of the gripper. We rejected the demonstration if another car moved more than 5 mm. A pickup required gripper contact on both sides of the car and a lift of at least 25 mm.
+
+The first collection had 100 accepted demonstrations. We used 80 for training and kept 20 for development. We later added 200 training demonstrations. The final training set had 140 pushes and 140 pick-and-place demonstrations. The 20 development scenes stayed the same.
+
+We replayed the recorded commands before export to LeRobot. Each row contains the text instruction, two camera images, six joint positions, and six target positions. The images and joint positions come from immediately before the command. We calculated the input and action scale values from the training split.
+
+<div className="grid grid-cols-2 gap-4">
+  <figure><img src="/images/so101-car-parking/overhead.webp" width={512} height={384} alt="The overhead camera shows the arm, the cars, and the parking bays." loading="lazy" /><figcaption>Overhead camera</figcaption></figure>
+  <figure><img src="/images/so101-car-parking/wrist.webp" width={512} height={384} alt="The wrist camera shows a close view of a blue toy car." loading="lazy" /><figcaption>Wrist camera</figcaption></figure>
+</div>
+
+## How we trained the policy
+
+The first model was SmolVLA. It completed 5,000 updates on the original 80 training demonstrations. It completed zero parks in the 20 development scenes. We checked camera order, joint order, units, and the timestamp of each row. Those checks found no clear data error.
+
+Next we changed the model and expanded the data. We used the generic LeRobot π₀.₅ checkpoint with the 280 training demonstrations. Both changes happened in the same experiment, so the result cannot show the effect of each change alone. [LeRobot π₀.₅ documentation](https://huggingface.co/docs/lerobot/pi05).
+
+We kept the vision and language weights fixed. We updated the action expert and the layers that pass action and time data to it. Training used supervised flow matching. The model learned to convert noise into a sequence of joint targets from the observations and the instruction.
+
+The simulator ran the controller at 20 Hz. At each decision, the policy predicted 50 future actions. The controller used the first 10 and then got new camera images and joint positions. The policy received no car or bay coordinates. During evaluation, the evaluator used those coordinates to score the result and stop unsafe attempts.
+
+## What the tests measured
+
+A full park required the entire car to be inside the bay. The car also had to stay upright and free of the gripper for at least 0.5 seconds after it came to rest. A partial placement earned a separate result if the released car overlapped the correct bay and met the safety checks.
+
+<figure>
+  <a href="/images/so101-car-parking/containment.webp"><img src="/images/so101-car-parking/containment.webp" width={3285} height={1530} alt="The teacher puts the entire car inside the bay. The learned policy puts part of the car inside the bay." loading="lazy" /></a>
+  <figcaption>A full park requires the entire car to fit inside the bay.</figcaption>
+</figure>
+
+Training reached 7,000 updates. We compared the checkpoints on six development scenes and selected the checkpoint at 3,000 updates. Those six scenes were part of the 20-scene evaluation. At that checkpoint, two cars ended on the table with part of the car inside the correct bay. Neither car fit fully inside its bay.
+
+<figure>
+  <video src="/images/so101-car-parking/partial-placement.mp4" width={640} height={568} poster="/images/so101-car-parking/partial-placement.webp" className="mx-auto h-auto max-w-full" controls playsInline preload="none" aria-label="Recorded partial placement from the SO-101 policy" />
+  <figcaption>Recorded playback. The policy released the car with part of it inside the bay.</figcaption>
+</figure>
+
+The validation loss decreased from 0.0138 at 3,000 updates to 0.0108 at 4,000. In one recorded case, the 4,000-update policy still lifted the car but released it farther from the bay. The loss measures how far the model output is from the flow target for each recorded action. To measure parking, we ran the policy in the simulator and scored the final car position.
+
+<figure>
+  <a href="/images/so101-car-parking/validation-loss.webp"><img src="/images/so101-car-parking/validation-loss.webp" width={3285} height={1440} alt="The validation loss falls through 6,000 updates and rises at 7,000 updates." loading="lazy" /></a>
+  <figcaption>Validation loss across seven saved checkpoints.</figcaption>
+</figure>
+
+Four new layouts gave zero full parks and zero qualified partial placements. We used the same checkpoint with a different inference setup for these four runs. The result does not separate the effect of the new layouts from the effect of the inference change.
+
+## Two follow-up experiments
+
+**Changes to more model parts.** We trained a second π₀.₅ policy from the same generic base. This run also updated the vision layers and added LoRA adapters to the language and action layers. We compared both 3,000-update policies on the same 20 scenes, with the same inference settings and noise samples.
+
+Both policies scored zero full parks and zero bay overlaps in that comparison. The second policy made one safe pickup in ten pick-and-place scenes. It carried the car over the bay and released it outside. The first policy made zero safe pickups under this comparison protocol.
+
+**Teacher corrections.** We recorded policy attempts from new starting states. A scripted teacher took control at a selected point and finished the task. We kept 20 correction episodes and removed the actions from the failed policy attempts. Most handovers happened before the arm held a car. Only one handover started with a car in the gripper.
+
+We started two runs from the same checkpoint and gave each 500 more updates. One run used the original demonstrations. In the other run, 25% of the sampled rows came from the correction episodes. All corrections were pick-and-place cases, so the second run also saw a larger share of that action.
+
+We tested each run on 20 development scenes and 20 new scenes. Both scored zero full parks. In the new scenes, the share of control steps with a command outside its actuator limits fell from about 49% to 23% with corrections. This change did not improve the parking score.
+
+## The next test
+
+The next test can start with a car in the gripper. It can measure whether the arm lowers and releases the car inside the bay. A separate test from reset can show whether a change also helps the full task.
+
+The results above apply to the simulator and its layouts. The repository includes the simulator, teacher, training code, and evaluation tools. The public checkpoint is the first π₀.₅ policy at 3,000 updates.
+
+- [Source code and demo](https://github.com/Parassharmaa/so101-car-parking)
+- [Model weights](https://huggingface.co/blazeofchi/so101-car-parking-pi05)
+- [Training data](https://huggingface.co/datasets/blazeofchi/so101-car-parking-train)
+- [Development data](https://huggingface.co/datasets/blazeofchi/so101-car-parking-validation)
