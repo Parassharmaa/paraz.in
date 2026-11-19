@@ -159,6 +159,13 @@ export const RESUME_DATA = {
       link: { href: "https://parassharmaa.github.io/kumoba/" },
     },
     {
+      title: "SO-101 Car Parking",
+      techStack: ["Robotics", "MuJoCo", "LeRobot", "pi0.5"],
+      description:
+        "A fine-tuned pi0.5 policy guides a simulated SO-101 robot arm as it moves toy cars toward colored parking bays. The project includes model weights, datasets, and videos of the evaluation runs.",
+      link: { href: "https://github.com/Parassharmaa/so101-car-parking" },
+    },
+    {
       title: "System One Eval",
       techStack: ["AI Evals", "Structured Decisions", "Hugging Face"],
       description:
