@@ -6,7 +6,7 @@ published: true
 author: "Paras Sharma"
 ---
 
-I built a MuJoCo task in which an SO-101 robot arm moves a toy car to a colored parking bay. I collected 300 scripted demonstrations and used them to train a policy. The selected policy put two cars partly into the correct bays in 20 development scenes. It did not complete a park.
+I built a parking task for a simulated SO-101 robot arm in MuJoCo. I collected 300 demonstrations with a script and used 280 to train the policy. In 20 development scenes, the model put two cars partly inside the correct bays. It completed zero full parks.
 
 <figure>
   <a href="/images/so101-car-parking/partial-placement.webp"><img src="/images/so101-car-parking/partial-placement.webp" width={960} height={832} alt="A simulated SO-101 arm and toy cars on a table with colored bays." loading="lazy" /></a>
@@ -15,21 +15,21 @@ I built a MuJoCo task in which an SO-101 robot arm moves a toy car to a colored 
 
 ## The simulator and the task
 
-I started with one car and a straight push. An inverse kinematics controller moved the gripper behind the car. The fingers pushed the car through contact. The car had passive wheels and no motor.
+I started with one car and a straight push. An inverse kinematics controller moved the gripper behind the car. The gripper pushed the car. The wheels turned freely, and the car had no motor.
 
-Then I added scenes with two to four cars and the same number of bays. A text instruction specified the action, the car color, and the bay color. The instruction can specify a different color for the bay. The requested action was either a push or a pick and place.
+Then I added scenes with two to four cars and the same number of bays. Each instruction named a car and a bay by color. It told the arm to push the car or pick it up and place it. The car and bay did not have to match in color.
 
-The arm used a raised mount and flat pads on the gripper. These changes helped it reach the bays and grip the cars. I varied car positions and bay positions within a fixed layout scheme. The initial car headings, camera positions, and light did not change. The simulator used the SO-101 model from [MuJoCo Menagerie](https://github.com/google-deepmind/mujoco_menagerie).
+The arm used a raised mount and flat pads on the gripper. These changes helped it reach the bays and grip the cars. I changed where the cars and bays started within a fixed layout. The cars started in the same direction. The cameras and lights stayed fixed. The simulator used the SO-101 model from [MuJoCo Menagerie](https://github.com/google-deepmind/mujoco_menagerie).
 
 ## How I collected the data
 
-A scripted teacher used the car and bay positions from MuJoCo. It converted waypoints into joint commands. The arm moved the cars through contact and grip forces.
+I used a script to make the demonstrations. It read the car and bay positions from MuJoCo and converted points along the arm path into joint commands. Cars moved only when the arm pushed or gripped them.
 
 I accepted a demonstration when the correct car stopped upright and fully inside its bay. The car had to be on the table and free of the gripper. I rejected the demonstration if another car moved more than 5 mm. A pickup required gripper contact on both sides of the car and a lift of at least 25 mm.
 
 The first collection had 100 accepted demonstrations. I used 80 for training and kept 20 for development. I later added 200 training demonstrations. The final training set had 140 pushes and 140 pick-and-place demonstrations. The 20 development scenes stayed the same.
 
-I replayed the recorded commands before export to LeRobot. Each row contains the text instruction, two camera images, six joint positions, and six target positions. The images and joint positions come from immediately before the command. I calculated the input and action scale values from the training split.
+I replayed the recorded commands before I exported the data to LeRobot. Each row pairs an instruction, two camera images, and six joint positions with the six targets for the next command. I used only the training data to calculate how to scale the joint positions and targets.
 
 <div className="grid grid-cols-2 gap-4">
   <figure><img src="/images/so101-car-parking/overhead.webp" width={512} height={384} alt="The overhead camera shows the arm, the cars, and the parking bays." loading="lazy" /><figcaption>Overhead camera</figcaption></figure>
@@ -38,17 +38,17 @@ I replayed the recorded commands before export to LeRobot. Each row contains the
 
 ## How I trained the policy
 
-The first model was SmolVLA. It completed 5,000 updates on the original 80 training demonstrations. It completed zero parks in the 20 development scenes. I checked camera order, joint order, units, and the timestamp of each row. Those checks found no clear data error.
+I trained SmolVLA first, for 5,000 updates on 80 demonstrations. It parked none of the 20 cars in the development scenes. I checked the camera order, joint order, units, and timestamps. I found no clear error in those checks.
 
-Next I changed the model and expanded the data. I used the generic LeRobot π₀.₅ checkpoint with the 280 training demonstrations. Both changes happened in the same experiment, so the result cannot show the effect of each change alone. [LeRobot π₀.₅ documentation](https://huggingface.co/docs/lerobot/pi05).
+Next I trained from the base LeRobot π₀.₅ checkpoint with 280 demonstrations. I changed the model and the dataset in the same run. That run gives one result for both changes. [LeRobot π₀.₅ documentation](https://huggingface.co/docs/lerobot/pi05).
 
-I kept the vision and language weights fixed. I updated the action expert and the layers that pass action and time data to it. Training used supervised flow matching. The model learned to convert noise into a sequence of joint targets from the observations and the instruction.
+I kept the vision and language weights fixed. I trained the action expert, which predicts how the joints move, and the layers that pass action and time data to it. I used supervised flow matching to teach the model to turn noise into joint targets based on the observations and instruction.
 
-The simulator ran the controller at 20 Hz. At each decision, the policy predicted 50 future actions. The controller used the first 10 and then got new camera images and joint positions. The policy received no car or bay coordinates. During evaluation, the evaluator used those coordinates to score the result and stop unsafe attempts.
+The controller sent 20 commands per second. The model predicted 50 commands at a time. The controller used the first 10, then read new camera images and joint positions. The model never received car or bay coordinates. The evaluation code used those coordinates to score results and stop unsafe attempts.
 
 ## What the tests measured
 
-A full park required the entire car to be inside the bay. The car also had to stay upright and free of the gripper for at least 0.5 seconds after it came to rest. A partial placement earned a separate result if the released car overlapped the correct bay and met the safety checks.
+A full park required the entire car to be inside the bay. The car also had to stay upright and free of the gripper for at least 0.5 seconds after it came to rest. I counted a separate partial placement when the car overlapped the correct bay after release and passed the safety checks.
 
 <figure>
   <a href="/images/so101-car-parking/containment.webp"><img src="/images/so101-car-parking/containment.webp" width={3285} height={1530} alt="The teacher puts the entire car inside the bay. The learned policy puts part of the car inside the bay." loading="lazy" /></a>
@@ -62,30 +62,34 @@ Training reached 7,000 updates. I compared the checkpoints on six development sc
   <figcaption>Recorded playback. The policy released the car with part of it inside the bay.</figcaption>
 </figure>
 
-The validation loss decreased from 0.0138 at 3,000 updates to 0.0108 at 4,000. In one recorded case, the 4,000-update policy still lifted the car but released it farther from the bay. The loss measures how far the model output is from the flow target for each recorded action. To measure parking, I ran the policy in the simulator and scored the final car position.
+The validation loss decreased from 0.0138 at 3,000 updates to 0.0108 at 4,000. In one recorded case, the 4,000-update policy still lifted the car but released it farther from the bay. The loss measures prediction error on recorded data. I checked the final car position in the simulator to measure how well the policy parked.
 
 <figure>
   <a href="/images/so101-car-parking/validation-loss.webp"><img src="/images/so101-car-parking/validation-loss.webp" width={3285} height={1440} alt="The validation loss falls through 6,000 updates and rises at 7,000 updates." loading="lazy" /></a>
   <figcaption>Validation loss across seven saved checkpoints.</figcaption>
 </figure>
 
-Four new layouts gave zero full parks and zero qualified partial placements. I used the same checkpoint with a different inference setup for these four runs. The result does not separate the effect of the new layouts from the effect of the inference change.
+I tried the same checkpoint on four new layouts and changed the inference settings. The policy made zero full parks and zero safe partial placements. I changed both factors, so the test gives no separate result for either one.
 
 ## Two follow-up experiments
 
-**Changes to more model parts.** I trained a second π₀.₅ policy from the same generic base. This run also updated the vision layers and added LoRA adapters to the language and action layers. I compared both 3,000-update policies on the same 20 scenes, with the same inference settings and noise samples.
+### Train more of the model
 
-Both policies scored zero full parks and zero bay overlaps in that comparison. The second policy made one safe pickup in ten pick-and-place scenes. It carried the car over the bay and released it outside. The first policy made zero safe pickups under this comparison protocol.
+I trained a second π₀.₅ policy from the same generic base. This run also updated the vision layers and added LoRA adapters to the language and action layers. I compared both 3,000-update policies on the same 20 scenes, with the same inference settings and noise samples.
 
-**Teacher corrections.** I recorded policy attempts from new starting states. A scripted teacher took control at a selected point and finished the task. I kept 20 correction episodes and removed the actions from the failed policy attempts. Most handovers happened before the arm held a car. Only one handover started with a car in the gripper.
+Both policies scored zero full parks and zero bay overlaps in that comparison. The second policy made one safe pickup in ten pick-and-place scenes. It carried the car over the bay and released it outside. The first policy made zero safe pickups in this comparison.
 
-I started two runs from the same checkpoint and gave each 500 more updates. One run used the original demonstrations. In the other run, 25% of the sampled rows came from the correction episodes. All corrections were pick-and-place cases, so the second run also saw a larger share of that action.
+### Add corrections to the data
 
-I tested each run on 20 development scenes and 20 new scenes. Both scored zero full parks. In the new scenes, the share of control steps with a command outside its actuator limits fell from about 49% to 23% with corrections. This change did not improve the parking score.
+I recorded attempts from new starting positions. A script took control partway through each attempt and finished the task. I kept 20 runs and used only the part after the script took control. In 19 of those runs, the gripper did not hold a car when the script took control.
+
+I started two runs from the same checkpoint and gave each 500 more updates. One run used the original demonstrations. In the other run, 25% of the rows came from the corrections. Every correction came from a pick-and-place task, so that run used more examples of that action.
+
+I tested each run on 20 development scenes and 20 new scenes. Both scored zero full parks. In the new scenes, adding corrections cut the share of control steps with an out-of-range command from about 49% to 23%. That drop did not change the final parking result.
 
 ## The next test
 
-The next test can start with a car in the gripper. It can measure whether the arm lowers and releases the car inside the bay. A separate test from reset can show whether a change also helps the full task.
+For the next test, I want to start with a car already in the gripper. I can then check whether the arm lowers and releases it inside the bay. A separate run from the start of the task can show whether that change helps with a full park.
 
 The results above apply to the simulator and its layouts. The repository includes the simulator, teacher, training code, and evaluation tools. The public checkpoint is the first π₀.₅ policy at 3,000 updates.
 
