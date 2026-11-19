@@ -87,9 +87,14 @@ I started two runs from the same checkpoint and gave each 500 more updates. One 
 
 I tested each run on 20 development scenes and 20 new scenes. Both scored zero full parks. In the new scenes, adding corrections cut the share of control steps with an out-of-range command from about 49% to 23%. That drop did not change the final parking result.
 
-## The next test
+## What I plan to try next
 
-For the next test, I want to start with a car already in the gripper. I can then check whether the arm lowers and releases it inside the bay. A separate run from the start of the task can show whether that change helps with a full park.
+I plan to start with a car already in the gripper and test whether the model can lower and release it inside the bay. Then I want to try two changes to the training data.
+
+- **Collect more examples of carrying and release.** Only one of the 20 earlier corrections started with a car in the gripper. I plan to collect more demonstrations from that state, at different distances and angles to the bay. I will compare two runs from the same checkpoint, with the same number of updates. One will use the original data. The other will include the new examples.
+- **Train on simpler scenes first.** I plan to train a pick-and-place policy with one car and one bay. Once it can park the car on new layouts, I will add other cars and vary the starting angles. I want to see when the extra objects or angles start to cause failures.
+
+I will keep the evaluation layouts out of the training data. I will count full parks first and record where each failed run stops. That will show whether a change helps with a grasp, the move to the bay, or the release.
 
 The results above apply to the simulator and its layouts. The repository includes the simulator, teacher, training code, and evaluation tools. The public checkpoint is the first π₀.₅ policy at 3,000 updates.
 
