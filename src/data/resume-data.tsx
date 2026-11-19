@@ -152,6 +152,13 @@ export const RESUME_DATA = {
   ],
   projects: [
     {
+      title: "Kumoba",
+      techStack: ["Rust", "Virtual Machines", "TypeScript SDK", "AI Agents"],
+      description:
+        "An open-source sandbox for AI agents. Each sandbox runs in its own virtual machine. Kumoba includes a CLI, TypeScript and Rust SDKs, and a live desktop in the browser. It is in alpha.",
+      link: { href: "https://parassharmaa.github.io/kumoba/" },
+    },
+    {
       title: "System One Eval",
       techStack: ["AI Evals", "Structured Decisions", "Hugging Face"],
       description:
